@@ -94,26 +94,31 @@ IMChangeICStruct *call_data;
       printf ("StoreIC.ic: %s\n", pre_attr->name);
       if (!strcmp(XNInputStyle, ic_attr->name))
 	{
+	  printf ("XNInputStyle");
 	  rec->input_style = *(INT32*)ic_attr->value;
 	  switch (rec->input_style & (XIMPreeditCallbacks|XIMPreeditPosition|XIMPreeditArea|XIMPreeditNothing))
 	    {
 	    case XIMPreeditCallbacks:
-	      printf ("XIMPreeditCallbacks:");
+	      printf ("XIMPreeditCallbacks:\n");
+	      XWinIMESetCompositionDraw (dpy, rec->context, False);
 	      break;
 	    case XIMPreeditPosition:
-	      printf ("XIMPreeditPosition:");
+	      printf ("XIMPreeditPosition:\n");
+	      XWinIMESetCompositionDraw (dpy, rec->context, True);
 	      break;
 	    case XIMPreeditArea:
-	      printf ("XIMPreeditArea:");
+	      printf ("XIMPreeditArea:\n");
+	      XWinIMESetCompositionDraw (dpy, rec->context, True);
 	      break;
 	    case XIMPreeditNothing:
-	      printf ("XIMPreeditNothing:");
+	      printf ("XIMPreeditNothing:\n");
+	      XWinIMESetCompositionDraw (dpy, rec->context, True);
 	      XWinIMESetCompositionWindow (dpy, rec->context,
 					   WinIMECSDefault,
 					   0, 0, 0, 0);
 	      break;
 	    default:
-	      printf ("No preedit style:");
+	      printf ("No preedit style:\n");
 	      break;
 	    }
 	  switch (rec->input_style & (XIMStatusCallbacks|XIMStatusArea|XIMStatusNothing|XIMStatusNone))

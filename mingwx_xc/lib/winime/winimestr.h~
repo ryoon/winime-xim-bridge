@@ -130,10 +130,8 @@ typedef struct _WinIMEGetCompositionString {
     CARD8	imeReqType;		/* always X_IMEGetCompositionString */
     CARD16	length B16;
     CARD32	context B32;
-    CARD32	index B32;
-    CARD32	pad1 B32;
 } xWinIMEGetCompositionStringReq;
-#define sz_xWinIMEGetCompositionStringReq	16
+#define sz_xWinIMEGetCompositionStringReq	8
 
 typedef struct {
     BYTE	type;			/* X_Reply */
@@ -158,36 +156,5 @@ typedef struct _WinIMESetFocus {
     CARD32	focus B32;
 } xWinIMESetFocusReq;
 #define sz_xWinIMESetFocusReq	12
-
-typedef struct _WinIMESetCompositionDraw {
-    CARD8	reqType;		/* always IMEReqCode */
-    CARD8	imeReqType;		/* always X_IMESetCompositionDraw */
-    CARD16	length B16;
-    CARD32	context B32;
-    CARD32	draw B32;
-} xWinIMESetCompositionDrawReq;
-#define sz_xWinIMESetCompositionDrawReq	12
-
-typedef struct _WinIMEGetCursorPosition {
-    CARD8	reqType;		/* always IMEReqCode */
-    CARD8	imeReqType;		/* always X_WinIMEGetCursorPosition */
-    CARD16	length B16;
-    CARD32	context B32;
-} xWinIMEGetCursorPositionReq;
-#define sz_xWinIMEGetCursorPositionReq	8
-
-typedef struct {
-    BYTE	type;			/* X_Reply */
-    BOOL	pad1;
-    CARD16	sequenceNumber B16;
-    CARD32	length B32;
-    CARD32	context B32;		/* input context */
-    CARD32	cursor B32;
-    CARD32	pad3 B32;
-    CARD32	pad4 B32;
-    CARD32	pad5 B32;
-    CARD32	pad6 B32;
-} xWinIMEGetCursorPositionReply;
-#define sz_xWinIMEGetCursorPositionReply	32
 
 #endif /* _WINIMESTR_H_ */

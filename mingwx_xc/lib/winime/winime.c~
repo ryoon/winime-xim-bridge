@@ -295,7 +295,6 @@ XWinIMESetCompositionWindow (Display* dpy, int context,
 
 Bool
 XWinIMEGetCompositionString (Display *dpy, int context,
-			     int index,
 			     int count,
 			     char* str_return)
 {
@@ -312,7 +311,6 @@ XWinIMEGetCompositionString (Display *dpy, int context,
   req->reqType = info->codes->major_opcode;
   req->imeReqType = X_WinIMEGetCompositionString;
   req->context = context;
-  req->index = index;
   rep.strLength = 0;
 
   if (!_XReply(dpy, (xReply *)&rep, 0, xFalse))
@@ -366,56 +364,5 @@ XWinIMESetFocus (Display* dpy, int context, Bool focus)
   SyncHandle();
   TRACE("IMESetFocus... return True");
 
-  return True;
-}
-
-Bool
-XWinIMESetCompositionDraw (Display* dpy, int context, Bool draw)
-{
-  XExtDisplayInfo *info = find_display (dpy);
-  xWinIMESetCompositionDrawReq *req;
-
-  TRACE("IMESetCompositionDraw...");
-  WinIMECheckExtension (dpy, info, False);
-
-  LockDisplay(dpy);
-  GetReq(WinIMESetCompositionDraw, req);
-  req->reqType = info->codes->major_opcode;
-  req->imeReqType = X_WinIMESetCompositionDraw;
-  req->context = context;
-  req->draw = draw;
-  UnlockDisplay(dpy);
-  SyncHandle();
-  TRACE("IMESetCompositionDraw... return True");
-
-  return True;
-}
-
-Bool
-XWinIMEGetCursorPosition (Display* dpy, int context, int *cursor)
-{
-  XExtDisplayInfo *info = find_display (dpy);
-  xWinIMEGetCursorPositionReply rep;
-  xWinIMEGetCursorPositionReq *req;
-
-  TRACE("GetCursorPosition...");
-  WinIMECheckExtension (dpy, info, False);
-
-  LockDisplay(dpy);
-  GetReq(WinIMEGetCursorPosition, req);
-  req->reqType = info->codes->major_opcode;
-  req->imeReqType = X_WinIMEGetCursorPosition;
-  req->context = context;
-  if (!_XReply(dpy, (xReply *)&rep, 0, xFalse))
-    {
-      UnlockDisplay(dpy);
-      SyncHandle();
-      TRACE("GetCursorPosition... return False");
-      return False;
-    }
-  *cursor = rep.cursor;
-  UnlockDisplay(dpy);
-  SyncHandle();
-  TRACE("GetCursorPosition... return True");
   return True;
 }

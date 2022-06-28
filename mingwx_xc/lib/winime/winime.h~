@@ -40,8 +40,7 @@
 #define X_WinIMESetCompositionWindow	4
 #define X_WinIMEGetCompositionString	5
 #define X_WinIMESetFocus		6
-#define X_WinIMESetCompositionDraw	7
-#define X_WinIMEGetCursorPosition	8
+#define X_WinIMEUnsetFocus		7
 
 /* Events */
 #define WinIMEControllerNotify		0
@@ -55,20 +54,6 @@
 #define WinIMEComposition		1
 #define WinIMEStartComposition		2
 #define WinIMEEndComposition		3
-
-/* "args" of WinIMEComposition events */
-#define WinIMECMPCompReadStr 1
-#define WinIMECMPCompReadAttr 2
-#define WinIMECMPCompReadClause 4
-#define WinIMECMPCompStr 8
-#define WinIMECMPCompAttr 16
-#define WinIMECMPCompClause 32
-#define WinIMECMPCursorPos 128
-#define WinIMECMPDeltaStart 256
-#define WinIMECMPResultReadStr 512
-#define WinIMECMPResultReadClause 1024
-#define WinIMECMPResultStr 2048
-#define WinIMECMPResultClause 4096
 
 /* Errors */
 #define WinIMEClientNotLocal		0
@@ -114,15 +99,10 @@ Bool XWinIMESetCompositionWindow (Display *dpy, int context,
 				  short cf_w, short cf_h);
 
 Bool XWinIMEGetCompositionString (Display *dpy, int context,
-				  int index,
 				  int count,
 				  char* str_return);
 
 Bool XWinIMESetFocus (Display *dpy, int context, Bool focus);
-
-Bool XWinIMESetCompositionDraw (Display *dpy, int context, Bool draw);
-
-Bool XWinIMEGetCursorPosition (Display *dpy, int context, int* cursor);
 
 _XFUNCPROTOEND
 

@@ -82,9 +82,12 @@ typedef struct _WIContext {
   WIContextPtr		pNext;
   int			nContext;
   HIMC			hIMC;
+  BOOL			fCompositionDraw;
+  int			nCursor;
   DWORD			dwCompositionStyle;
   POINT			ptCompositionPos;
   RECT			rcCompositionArea;
+  char			*pszComposition;
   char			*pszCompositionResult;
 } WIContextRec;
 
@@ -107,7 +110,9 @@ NewContext()
       /* Init member */
       pWIC->nContext = ++s_nContextMax;
       pWIC->hIMC = ImmCreateContext ();
+      pWIC->fCompositionDraw = FALSE;
       pWIC->dwCompositionStyle = CFS_DEFAULT;
+      pWIC->pszComposition = NULL;
       pWIC->pszCompositionResult = NULL;
 
       /* Add to list. */
@@ -215,8 +220,34 @@ winHIMCtoContext(DWORD hIMC)
   return 0;
 }
 
+Bool
+winHIMCCompositionDraw(DWORD hIMC)
+{
+  WIContextPtr pWIC;
+
+#if CYGIME_DEBUG
+  winDebug ("%s %d\n", __FUNCTION__, hIMC);
+#endif
+
+  for (pWIC = s_pContextList; pWIC; pWIC = pWIC->pNext)
+    {
+      if (pWIC->hIMC == hIMC)
+	{
+#if CYGIME_DEBUG
+	  winDebug ("found.\n");
+#endif
+	  return pWIC->fCompositionDraw;
+	}
+    }
+
+#if CYGIME_DEBUG
+  winDebug ("not found.\n");
+#endif
+  return FALSE;
+}
+
 void
-winCommitCompositionResult (int nContext, char *pszStr)
+winCommitCompositionResult (int nContext, int nIndex, char *pszStr)
 {
   WIContextPtr pWIC;
 #if CYGIME_DEBUG
@@ -225,13 +256,30 @@ winCommitCompositionResult (int nContext, char *pszStr)
 
   if (!(pWIC = FindContext(nContext))) return;
 
-
-  if (pWIC->pszCompositionResult)
+  switch (nIndex)
     {
-      free (pWIC->pszCompositionResult);
-    }
+    case GCS_COMPSTR:
+      if (pWIC->pszComposition)
+	{
+	  free (pWIC->pszComposition);
+	}
+      pWIC->pszComposition = strdup (pszStr);
+      break;
 
-  pWIC->pszCompositionResult = strdup (pszStr);
+    case GCS_RESULTSTR:
+      if (pWIC->pszCompositionResult)
+	{
+	  free (pWIC->pszCompositionResult);
+	}
+      pWIC->pszCompositionResult = strdup (pszStr);
+      break;
+
+    case GCS_CURSORPOS:
+      pWIC->nCursor = *(int*)pszStr;
+
+    default:
+      break;
+    }
 }
 
 static Bool
@@ -604,22 +652,57 @@ ProcWinIMEGetCompositionString (register ClientPtr client)
 
   if ((pWIC = FindContext(stuff->context)))
     {
-      if (pWIC->pszCompositionResult)
+      switch (stuff->index)
 	{
-	  len = strlen(pWIC->pszCompositionResult);
-	  rep.type = X_Reply;
-	  rep.length = (len + 3) >> 2;
-	  rep.sequenceNumber = client->sequence;
-	  rep.strLength = len;
-	  WriteReplyToClient(client, sizeof(xWinIMEGetCompositionStringReply), &rep);
-	  (void)WriteToClient(client, len, pWIC->pszCompositionResult);
-	}
-      else
-	{
+	case WinIMECMPCompStr:
+	  {
+	    if (pWIC->pszComposition)
+	      {
+		len = strlen(pWIC->pszComposition);
+		rep.type = X_Reply;
+		rep.length = (len + 3) >> 2;
+		rep.sequenceNumber = client->sequence;
+		rep.strLength = len;
+		WriteReplyToClient(client, sizeof(xWinIMEGetCompositionStringReply), &rep);
+		(void)WriteToClient(client, len, pWIC->pszComposition);
+	      }
+	    else
+	      {
 #if CYGIME_DEBUG
-	  winDebug ("no composition result.\n");
+		winDebug ("no composition result.\n");
 #endif
-	  return BadValue;
+		return BadValue;
+	      }
+	  }
+	  break;
+	case WinIMECMPResultStr:
+	  {
+	    if (pWIC->pszCompositionResult)
+	      {
+		len = strlen(pWIC->pszCompositionResult);
+		rep.type = X_Reply;
+		rep.length = (len + 3) >> 2;
+		rep.sequenceNumber = client->sequence;
+		rep.strLength = len;
+		WriteReplyToClient(client, sizeof(xWinIMEGetCompositionStringReply), &rep);
+		(void)WriteToClient(client, len, pWIC->pszCompositionResult);
+	      }
+	    else
+	      {
+#if CYGIME_DEBUG
+		winDebug ("no composition result.\n");
+#endif
+		return BadValue;
+	      }
+	  }
+	  break;
+	default:
+	  {
+#if CYGIME_DEBUG
+	    winDebug ("bad index.\n");
+#endif
+	    return BadValue;
+	  }
 	}
     }
   else
@@ -729,6 +812,56 @@ ProcWinIMESetFocus (register ClientPtr client)
   return (client->noClientException);
 }
 
+static int
+ProcWinIMESetCompositionDraw (register ClientPtr client)
+{
+  REQUEST(xWinIMESetCompositionDrawReq);
+  WIContextPtr pWIC;
+
+  REQUEST_SIZE_MATCH(xWinIMESetCompositionDrawReq);
+
+#if CYGIME_DEBUG
+  winDebug ("%s %d\n", __FUNCTION__, stuff->context);
+#endif
+
+  if (!(pWIC = FindContext(stuff->context)))
+    {
+      return BadValue;
+    }
+
+  pWIC->fCompositionDraw = stuff->draw;
+
+  return (client->noClientException);
+}
+
+static int
+ProcWinIMEGetCursorPosition(register ClientPtr client)
+{
+  REQUEST(xWinIMEGetCursorPositionReq);
+  WIContextPtr pWIC;
+  xWinIMEGetCursorPositionReply rep;
+
+  REQUEST_SIZE_MATCH(xWinIMEGetCursorPositionReq);
+
+#if CYGIME_DEBUG
+  winDebug ("%s\n", __FUNCTION__);
+#endif
+
+  if (!(pWIC = FindContext(stuff->context)))
+    {
+      return BadValue;
+    }
+
+  REQUEST_SIZE_MATCH(xWinIMEGetCursorPositionReq);
+  rep.type = X_Reply;
+  rep.length = 0;
+  rep.sequenceNumber = client->sequence;
+  rep.cursor = pWIC->nCursor;
+
+  WriteToClient(client, sizeof(xWinIMEGetCursorPositionReply), (char *)&rep);
+  return (client->noClientException);
+}
+
 /*
  * deliver the event
  */
@@ -797,6 +930,10 @@ ProcWinIMEDispatch (register ClientPtr client)
       return ProcWinIMEGetCompositionString (client);
     case X_WinIMESetFocus:
       return ProcWinIMESetFocus (client);
+    case X_WinIMESetCompositionDraw:
+      return ProcWinIMESetCompositionDraw (client);
+    case X_WinIMEGetCursorPosition:
+      return ProcWinIMEGetCursorPosition (client);
     default:
       return BadRequest;
     }

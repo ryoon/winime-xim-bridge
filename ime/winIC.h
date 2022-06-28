@@ -53,17 +53,19 @@ typedef struct {
 } StatusAttributes;
 
 typedef struct _IC {
-    CARD16	id;		/* ic id */
-    INT32	input_style;	/* input style */
-    Window	client_win;	/* client window */
-    Window	focus_win;	/* focus window */
-    char	*resource_name;	/* resource name */
-    char	*resource_class;/* resource class */
-    int		context;	/* */
-    PreeditAttributes pre_attr;	/* preedit attributes */
-    StatusAttributes sts_attr;	/* status attributes */
-    IMProtocol call_data;
-    struct _IC	*next;
+  CARD16	id;		/* ic id */
+  INT32	input_style;	/* input style */
+  Window	client_win;	/* client window */
+  Window	focus_win;	/* focus window */
+  char	*resource_name;	/* resource name */
+  char	*resource_class;/* resource class */
+  int		context;	/* */
+  PreeditAttributes pre_attr;	/* preedit attributes */
+  StatusAttributes sts_attr;	/* status attributes */
+  int		length;
+  int		caret;
+  IMProtocol call_data;
+  struct _IC	*next;
 } IC;
 
 IC*

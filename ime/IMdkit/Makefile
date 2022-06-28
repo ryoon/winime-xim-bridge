@@ -2,7 +2,7 @@
 # $Xorg: imake.c,v 1.6 2001/02/09 02:03:15 xorgcvs Exp $
 
 # ----------------------------------------------------------------------
-# Makefile generated from "Imake.tmpl" and </tmp/IIf.002832>
+# Makefile generated from "Imake.tmpl" and </tmp/IIf.005188>
 # $Xorg: Imake.tmpl,v 1.4 2000/08/17 19:41:46 cpqbld Exp $
 # $XdotOrg: xc/config/cf/Imake.tmpl,v 1.1.4.3.2.6 2004/09/15 16:31:13 ago Exp $
 #
@@ -75,8 +75,8 @@ TCLIBDIR =
           PATHSEP = /
             SHELL = /bin/sh -e
 
-              TOP = ..
-      CURRENT_DIR = IMdkit
+              TOP = .
+      CURRENT_DIR = .
 
             IMAKE = imake
            DEPEND = makedepend

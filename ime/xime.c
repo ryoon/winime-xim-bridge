@@ -47,21 +47,19 @@ long filter_mask = KeyPressMask|KeyReleaseMask;
 int ime_event_base = 0;
 int ime_error_base = 0;
 Bool preedit_state_flag = False;
-#define COMPOSITION_STRING_BUFFER 1024
-char composition_string[COMPOSITION_STRING_BUFFER];
 Display *dpy;
 XIMS g_ims;
 
 /* Supported Inputstyles */
 static XIMStyle Styles[] = {
-  //XIMPreeditCallbacks|XIMStatusCallbacks,
-    XIMPreeditPosition|XIMStatusArea,
-    XIMPreeditPosition|XIMStatusNothing,
-    XIMPreeditPosition|XIMStatusNone,
-    //XIMPreeditArea|XIMStatusArea,
-    XIMPreeditNothing|XIMStatusNothing,
-    XIMPreeditNothing|XIMStatusNone,
-    0
+  XIMPreeditCallbacks|XIMStatusCallbacks,
+  XIMPreeditPosition|XIMStatusArea,
+  XIMPreeditPosition|XIMStatusNothing,
+  XIMPreeditPosition|XIMStatusNone,
+  XIMPreeditArea|XIMStatusArea,
+  XIMPreeditNothing|XIMStatusNothing,
+  XIMPreeditNothing|XIMStatusNone,
+  0
 };
 
 #if 0
@@ -323,10 +321,17 @@ MyProtoHandler(XIMS ims, IMProtocol *call_data)
 void
 MyXEventHandler(Window im_window, XEvent *event)
 {
+#define COMPOSITION_STRING_BUFFER 1024
+  char composition_string[COMPOSITION_STRING_BUFFER];
+  int i;
+
   printf ("%s\n", __FUNCTION__);
+  composition_string[0] = '\0';
+
   switch (event->type) {
   case DestroyNotify:
     break;
+
   case ButtonPress:
     switch (event->xbutton.button) {
     case Button3:
@@ -334,79 +339,186 @@ MyXEventHandler(Window im_window, XEvent *event)
 	goto Exit;
       break;
     }
+    break;
+
   default:
-    if (event->type == ime_event_base + WinIMEControllerNotify) {
-      XWinIMENotifyEvent *ime_event = (XWinIMENotifyEvent*)event;
+    if (event->type == ime_event_base + WinIMEControllerNotify)
+      {
+	XWinIMENotifyEvent *ime_event = (XWinIMENotifyEvent*)event;
+	IC *rec;
 
-      switch (ime_event->kind){
-      case WinIMEOpenStatus:
-	{
-	  IC *rec;
+	rec = FindICbyContext (ime_event->context);
 
-	  printf("WinIMEOpenStatus %d %s\n", ime_event->context,
-		 ime_event->arg ? "Open" : "Close");
-	  rec = FindICbyContext (ime_event->context);
+	switch (ime_event->kind){
+	case WinIMEOpenStatus:
+	  {
+	    printf("WinIMEOpenStatus %d %s\n", ime_event->context,
+		   ime_event->arg ? "Open" : "Close");
 
-	  if (!rec)
-	    {
-	      printf ("context %d IC is not found", ime_event->context);
-	      break;
-	    }
+	    if (!rec)
+	      {
+		printf ("context %d IC is not found", ime_event->context);
+		break;
+	      }
 
-	  if (ime_event->arg)
-	    {
-	      IMPreeditStart(g_ims, (XPointer)&rec->call_data);
-	    }
-	  else
-	    {
-	      IMPreeditStart(g_ims, (XPointer)&rec->call_data);
-	    }
+	    if (ime_event->arg)
+	      {
+		IMPreeditStart(g_ims, (XPointer)&rec->call_data);
+	      }
+	    else
+	      {
+		IMPreeditStart(g_ims, (XPointer)&rec->call_data);
+	      }
 
-	  preedit_state_flag = ime_event->arg;
+	    preedit_state_flag = ime_event->arg;
+	  }
+	  break;
+
+	case WinIMEComposition:
+	  {
+	    printf("WinIMEComposition %d %d\n", ime_event->context, ime_event->arg);
+
+	    if (!rec)
+	      {
+		printf ("context %d IC is not found", ime_event->context);
+		break;
+	      }
+
+	    switch (ime_event->arg)
+	      {
+	      case WinIMECMPCompStr:
+		{
+		  int cursor;
+		  if (!XWinIMEGetCompositionString (dpy, ime_event->context,
+						    WinIMECMPCompStr,
+						    COMPOSITION_STRING_BUFFER,
+						    composition_string))
+		    {
+		      printf("XWinIMEGetCompositionString failed.\n");
+		    }
+
+		  if (!XWinIMEGetCursorPosition (dpy, ime_event->context,
+						 &cursor))
+		    {
+		      printf("XWinIMEGetCursorPosition failed.\n");
+		    }
+		  rec->caret = cursor;
+
+		  if (strlen(composition_string) > 0)
+		    {
+		      XTextProperty tp;
+		      char *str = composition_string;
+		      XIMText text;
+		      XIMFeedback feedback[COMPOSITION_STRING_BUFFER] = {XIMUnderline};
+
+		      printf ("compstr: %s\n", composition_string);
+		      //setlocale (LC_CTYPE, "");
+		      Xutf8TextListToTextProperty(dpy, (char **)&str, 1,
+						  XCompoundTextStyle, &tp);
+
+		      text.length = tp.nitems;
+		      text.string.multi_byte = tp.value;
+		      for (i = 0; i < text.length; i ++) feedback[i] = XIMUnderline;
+		      feedback[text.length] = 0;
+		      text.feedback = feedback;
+
+		      rec->call_data.major_code = XIM_PREEDIT_DRAW;
+		      rec->call_data.preedit_callback.icid = rec->id;
+		      rec->call_data.preedit_callback.todo.draw.caret = rec->caret;
+		      rec->call_data.preedit_callback.todo.draw.chg_first = 0;
+		      rec->call_data.preedit_callback.todo.draw.chg_length = rec->length;
+		      rec->call_data.preedit_callback.todo.draw.text = &text;
+
+		      rec->length = tp.nitems;
+
+		      printf("%d\n", rec->length);
+
+		      IMCallCallback(g_ims, (XPointer)&rec->call_data);
+		      composition_string[0] = '\0';
+		    }
+		}
+		break;
+
+	      case WinIMECMPResultStr:
+		{
+		  XIMFeedback feedback[1] = {0};
+
+		  if (!XWinIMEGetCompositionString (dpy, ime_event->context,
+						    WinIMECMPResultStr,
+						    COMPOSITION_STRING_BUFFER,
+						    composition_string))
+		    {
+		      printf("XWinIMEGetCompositionString failed.\n");
+		    }
+
+		  if (strlen(composition_string) > 0)
+		    {
+		      XTextProperty tp;
+		      char *str = composition_string;
+		      XIMText text;
+
+		      printf ("commit result: %s\n", composition_string);
+		      //setlocale (LC_CTYPE, "");
+		      Xutf8TextListToTextProperty(dpy, (char **)&str, 1,
+						  XCompoundTextStyle, &tp);
+
+		      rec->call_data.commitstring.flag = XimLookupChars;
+		      rec->call_data.commitstring.commit_string = (char *)tp.value;
+		      rec->call_data.commitstring.icid = rec->id;
+
+		      IMCommitString(g_ims, (XPointer)&rec->call_data);
+		      composition_string[0] = '\0';
+
+		      text.length = 0;
+		      text.string.multi_byte = "";
+		      text.feedback = feedback;
+
+		      /* Clear preedit. */
+		      rec->call_data.major_code = XIM_PREEDIT_DRAW;
+		      rec->call_data.preedit_callback.icid = rec->id;
+		      rec->call_data.preedit_callback.todo.draw.caret = 0;
+		      rec->call_data.preedit_callback.todo.draw.chg_first = 0;
+		      rec->call_data.preedit_callback.todo.draw.chg_length = rec->length;
+		      rec->call_data.preedit_callback.todo.draw.text = &text;
+
+		      rec->length = 0;
+
+		      IMCallCallback(g_ims, (XPointer)&rec->call_data);
+		    }
+		}
+		break;
+
+	      default:
+		break;
+	      }
+	  }
+	  break;
+	case WinIMEStartComposition:
+	  {
+	    printf("WinIMEStartComposition %d\n", ime_event->context);
+
+	    if (!rec)
+	      {
+		printf ("context %d IC is not found", ime_event->context);
+		break;
+	      }
+
+	    rec->call_data.major_code = XIM_PREEDIT_START;
+	    IMCallCallback(g_ims, (XPointer)&rec->call_data);
 	}
-	break;
-      case WinIMEComposition:
-	printf("WinIMEComposition %d\n", ime_event->context);
-	break;
-      case WinIMEStartComposition:
-	printf("WinIMEStartComposition %d\n", ime_event->context);
 	break;
       case WinIMEEndComposition:
 	{
 	  printf("WinIMEEndComposition %d\n", ime_event->context);
 
-	  if (!XWinIMEGetCompositionString (dpy, ime_event->context,
-					    COMPOSITION_STRING_BUFFER,
-					    composition_string))
-	    {
-	      printf("XWinIMEGetCompositionString failed.\n");
-	    }
-
-	  if (strlen(composition_string) > 0){
-	    XTextProperty tp;
-	    char *str = composition_string;
-	    IC *rec;
-
-	    rec = FindICbyContext (ime_event->context);
-
 	    if (!rec)
 	      {
 		printf ("context %d IC is not found", ime_event->context);
+		break;
 	      }
-	    else
-	      {
-		printf ("commit: %s\n", composition_string);
-		//setlocale (LC_CTYPE, "");
-		Xutf8TextListToTextProperty(dpy, (char **)&str, 1,
-					    XCompoundTextStyle, &tp);
 
-		rec->call_data.commitstring.flag = XimLookupChars;
-		rec->call_data.commitstring.commit_string = (char *)tp.value;
-		rec->call_data.commitstring.icid = rec->id;
-		IMCommitString(g_ims, (XPointer)&rec->call_data);
-		composition_string[0] = '\0';
-	      }
-	  }
+	    rec->call_data.major_code = XIM_PREEDIT_DONE;
+	    IMCallCallback (g_ims, (XPointer)&rec->call_data);
 	}
 	break;
       default:
@@ -463,7 +575,7 @@ main(int argc, char **argv)
 	exit(1);
     }
 
-    XSetErrorHandler(ErrorHandler);
+    //XSetErrorHandler(ErrorHandler);
 
     if(!XWinIMEQueryExtension (dpy, &ime_event_base, &ime_error_base)){
 	fprintf(stderr, "No IME Extension\n");
@@ -486,16 +598,6 @@ main(int argc, char **argv)
     }
     input_styles->count_styles = sizeof(Styles)/sizeof(XIMStyle) - 1;
     input_styles->supported_styles = Styles;
-
-#if 0
-    if ((on_keys = (XIMTriggerKeys *)
-	 malloc(sizeof(XIMTriggerKeys))) == NULL) {
-	fprintf(stderr, "Can't allocate\n");
-	exit(1);
-    }
-    on_keys->count_keys = sizeof(Trigger_Keys)/sizeof(XIMTriggerKey) - 1;
-    on_keys->keylist = Trigger_Keys;
-#endif
 
     if ((encodings = (XIMEncodings *)malloc(sizeof(XIMEncodings))) == NULL) {
 	fprintf(stderr, "Can't allocate\n");
@@ -534,14 +636,6 @@ main(int argc, char **argv)
 	fprintf(stderr, "\tTranport Address:%s\n", transport);
 	exit(1);
     }
-#if 0
-    //XXX: use extension
-    if (use_trigger) {
-      IMSetIMValues(ims,
-		    IMOnKeysList, on_keys,
-		    NULL);
-    }
-#endif
     IMSetIMValues(ims,
 		  IMEncodingList, encodings,
 		  IMProtocolHandler, MyProtoHandler,
@@ -553,6 +647,48 @@ main(int argc, char **argv)
 		  IMOffKeysList, &trigger2,
 		  IMEncodingList, &encoding2,
 		  NULL);
+    {
+      int i;
+      for (i = 0; i < styles2->count_styles; i ++)
+	{
+	  switch (styles2->supported_styles[i] & (XIMPreeditCallbacks|XIMPreeditPosition|XIMPreeditArea|XIMPreeditNothing))
+	    {
+	    case XIMPreeditCallbacks:
+	      printf ("XIMPreeditCallbacks:");
+	      break;
+	    case XIMPreeditPosition:
+	      printf ("XIMPreeditPosition:");
+	      break;
+	    case XIMPreeditArea:
+	      printf ("XIMPreeditArea:");
+	      break;
+	    case XIMPreeditNothing:
+	      printf ("XIMPreeditNothing:");
+	      break;
+	    default:
+	      printf ("No preedit style:");
+	      break;
+	    }
+	  switch (styles2->supported_styles[i] & (XIMStatusCallbacks|XIMStatusArea|XIMStatusNothing|XIMStatusNone))
+	    {
+	    case XIMStatusCallbacks:
+	      printf ("XIMStatusCallbacks\n");
+	      break;
+	    case XIMStatusArea:
+	      printf ("XIMStatusArea\n");
+	      break;
+	    case XIMStatusNothing:
+	      printf ("XIMStatusNothing\n");
+	      break;
+	    case XIMStatusNone:
+	      printf ("XIMStatusNone\n");
+	      break;
+	    default:
+	      printf ("No status style\n");
+	      break;
+	    }
+	}
+    }
     XSelectInput(dpy, im_window, StructureNotifyMask|ButtonPressMask);
     XMapWindow(dpy, im_window);
     XFlush(dpy);		/* necessary flush for tcp/ip connection */
