@@ -35,13 +35,12 @@
 
 #define X_WinIMEQueryVersion		0
 #define X_WinIMESelectInput		1
-#define X_WinIMEEnable			2
-#define X_WinIMEDisable			3
-#define X_WinIMEOpen			4
-#define X_WinIMEClose			5
-#define X_WinIMESetCompositionPoint	6
-#define X_WinIMESetCompositionRect	7
-#define X_WinIMEGetCompositionString	8
+#define X_WinIMECreateContext		2
+#define X_WinIMESetOpenStatus		3
+#define X_WinIMESetCompositionWindow	4
+#define X_WinIMEGetCompositionString	5
+#define X_WinIMESetFocus		6
+#define X_WinIMEUnsetFocus		7
 
 /* Events */
 #define WinIMEControllerNotify		0
@@ -51,13 +50,10 @@
 #define WinIMENotifyMask		(1L << 0)
 
 /* "Kinds" of ControllerNotify events */
-#define WinIMEEnabled			0
-#define WinIMEDisabeled			1
-#define WinIMEOpened			2
-#define WinIMEClosed			3
-#define WinIMEComposition		4
-#define WinIMEStartComposition		5
-#define WinIMEEndComposition		6
+#define WinIMEOpenStatus		0
+#define WinIMEComposition		1
+#define WinIMEStartComposition		2
+#define WinIMEEndComposition		3
 
 /* Errors */
 #define WinIMEClientNotLocal		0
@@ -65,17 +61,23 @@
 #define WinIMEDisabled			2
 #define WinIMENumberErrors		3
 
+/* Composition Window Styles (CFS_*) */
+#define WinIMECSDefault			0
+#define WinIMECSRect			1
+#define WinIMECSPoint			2
+#define WinIMECSForcePosition		32
+
 #ifndef _WINIME_SERVER_
 
 typedef struct {
-    int	type;		    /* of event */
-    unsigned long serial;   /* # of last request processed by server */
-    Bool send_event;	    /* true if this came frome a SendEvent request */
-    Display *display;	    /* Display the event was read from */
-    Window window;	    /* window of event */
-    Time time;		    /* server timestamp when event happened */
-    int kind;		    /* subtype of event */
-    int arg;
+  int	type;		/* of event */
+  unsigned long serial;	/* # of last request processed by server */
+  Bool send_event;	/* true if this came frome a SendEvent request */
+  Display *display;	/* Display the event was read from */
+  int context;		/* context of event */
+  Time time;		/* server timestamp when event happened */
+  int kind;		/* subtype of event */
+  int arg;
 } XWinIMENotifyEvent;
 
 _XFUNCPROTOBEGIN
@@ -87,24 +89,20 @@ Bool XWinIMEQueryVersion (Display *dpy, int *majorVersion,
 
 Bool XWinIMESelectInput (Display *dpy, unsigned long mask);
 
-Bool XWinIMEEnable (Display *dpy, Window window);
+Bool XWinIMECreateContext (Display *dpy, int* context);
 
-Bool XWinIMEDisable (Display *dpy, Window window);
+Bool XWinIMESetOpenStetus (Display *dpy, int context, Bool state);
 
-Bool XWinIMEOpen (Display *dpy, Window window);
+Bool XWinIMESetCompositionWindow (Display *dpy, int context,
+				  int style,
+				  short cf_x, short cf_y,
+				  short cf_w, short cf_h);
 
-Bool XWinIMEClose (Display *dpy, Window window);
-
-Bool XWinIMESetCompositionPoint (Display *dpy, Window window,
-				 short cf_x, short cf_y);
-
-Bool XWinIMESetCompositionRect (Display *dpy, Window window,
-				short cf_x, short cf_y,
-				short cf_w, short cf_h);
-
-Bool XWinIMEGetCompositionString (Display *dpy, Window window,
+Bool XWinIMEGetCompositionString (Display *dpy, int context,
 				  int count,
 				  char* str_return);
+
+Bool XWinIMESetFocus (Display *dpy, int context, Bool focus);
 
 _XFUNCPROTOEND
 

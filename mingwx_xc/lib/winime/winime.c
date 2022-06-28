@@ -94,7 +94,7 @@ wire_to_event (Display *dpy, XEvent  *re, xEvent  *event)
       se->serial = _XSetLastRequestRead(dpy,(xGenericReply *) event);
       se->send_event = (sevent->type & 0x80) != 0;
       se->display = dpy;
-      se->window = sevent->window;
+      se->context = sevent->context;
       se->time = sevent->time;
       se->kind = sevent->kind;
       se->arg = sevent->arg;
@@ -119,7 +119,7 @@ event_to_wire (Display *dpy, XEvent  *re, xEvent  *event)
       sevent = (xWinIMENotifyEvent *) event;
       sevent->type = se->type | (se->send_event ? 0x80 : 0);
       sevent->sequenceNumber = se->serial & 0xffff;
-      sevent->window = se->window;
+      sevent->context = se->context;
       sevent->kind = se->kind;
       sevent->arg = se->arg;
       sevent->time = se->time;
@@ -215,129 +215,73 @@ XWinIMESelectInput (Display* dpy, unsigned long mask)
 }
 
 Bool
-XWinIMEEnable (Display* dpy, Window window)
+XWinIMECreateContext (Display* dpy, int* context)
 {
   XExtDisplayInfo *info = find_display (dpy);
-  xWinIMEEnableReq *req;
+  xWinIMECreateContextReply rep;
+  xWinIMECreateContextReq *req;
 
-  TRACE("IMEEnable...");
+  TRACE("CreateContext...");
   WinIMECheckExtension (dpy, info, False);
 
   LockDisplay(dpy);
-  GetReq(WinIMEEnable, req);
+  GetReq(WinIMECreateContext, req);
   req->reqType = info->codes->major_opcode;
-  req->imeReqType = X_WinIMEEnable;
-  req->window = window;
+  req->imeReqType = X_WinIMECreateContext;
+  if (!_XReply(dpy, (xReply *)&rep, 0, xFalse))
+    {
+      UnlockDisplay(dpy);
+      SyncHandle();
+      TRACE("CreateContext... return False");
+      return False;
+    }
+  *context = rep.context;
   UnlockDisplay(dpy);
   SyncHandle();
-  TRACE("IMEEnable... return True");
+  TRACE("CreateContext... return True");
+  return True;
+}
+
+Bool
+XWinIMESetOpenStatus (Display* dpy, int context, Bool state)
+{
+  XExtDisplayInfo *info = find_display (dpy);
+  xWinIMESetOpenStatusReq *req;
+
+  TRACE("IMESetOpenStatus...");
+  WinIMECheckExtension (dpy, info, False);
+
+  LockDisplay(dpy);
+  GetReq(WinIMESetOpenStatus, req);
+  req->reqType = info->codes->major_opcode;
+  req->imeReqType = X_WinIMESetOpenStatus;
+  req->context = context;
+  req->state = state;
+  UnlockDisplay(dpy);
+  SyncHandle();
+  TRACE("IMESetOpenStatus... return True");
 
   return True;
 }
 
 Bool
-XWinIMEDisable (Display* dpy, Window window)
+XWinIMESetCompositionWindow (Display* dpy, int context,
+			     int style,
+			     short cf_x, short cf_y,
+			     short cf_w, short cf_h)
 {
   XExtDisplayInfo *info = find_display (dpy);
-  xWinIMEDisableReq *req;
+  xWinIMESetCompositionWindowReq *req;
 
-  TRACE("IMEDisable...");
+  TRACE("SetCompositionWindow...");
   WinIMECheckExtension (dpy, info, False);
 
   LockDisplay(dpy);
-  GetReq(WinIMEDisable, req);
+  GetReq(WinIMESetCompositionWindow, req);
   req->reqType = info->codes->major_opcode;
-  req->imeReqType = X_WinIMEDisable;
-  req->window = window;
-  UnlockDisplay(dpy);
-  SyncHandle();
-  TRACE("IMEDisable... return True");
-
-  return True;
-}
-
-Bool
-XWinIMEOpen (Display* dpy, Window window)
-{
-  XExtDisplayInfo *info = find_display (dpy);
-  xWinIMEOpenReq *req;
-
-  TRACE("IMEOpen...");
-  WinIMECheckExtension (dpy, info, False);
-
-  LockDisplay(dpy);
-  GetReq(WinIMEOpen, req);
-  req->reqType = info->codes->major_opcode;
-  req->imeReqType = X_WinIMEOpen;
-  req->window = window;
-  UnlockDisplay(dpy);
-  SyncHandle();
-  TRACE("IMEOpen... return True");
-
-  return True;
-}
-
-Bool
-XWinIMEClose (Display* dpy, Window window)
-{
-  XExtDisplayInfo *info = find_display (dpy);
-  xWinIMECloseReq *req;
-
-  TRACE("IMEClose...");
-  WinIMECheckExtension (dpy, info, False);
-
-  LockDisplay(dpy);
-  GetReq(WinIMEClose, req);
-  req->reqType = info->codes->major_opcode;
-  req->imeReqType = X_WinIMEClose;
-  req->window = window;
-  UnlockDisplay(dpy);
-  SyncHandle();
-  TRACE("IMEClose... return True");
-
-  return True;
-}
-
-Bool
-XWinIMESetCompositionPoint (Display* dpy, Window window,
-			    short cf_x, short cf_y)
-{
-  XExtDisplayInfo *info = find_display (dpy);
-  xWinIMESetCompositionPointReq *req;
-
-  TRACE("SetCompositionPoint...");
-  WinIMECheckExtension (dpy, info, False);
-
-  LockDisplay(dpy);
-  GetReq(WinIMESetCompositionPoint, req);
-  req->reqType = info->codes->major_opcode;
-  req->imeReqType = X_WinIMESetCompositionPoint;
-  req->window = window;
-  req->ix = cf_x;
-  req->iy = cf_y;
-
-  UnlockDisplay(dpy);
-  SyncHandle();
-  TRACE("SetCompositionPoint... return True");
-  return True;
-}
-
-Bool
-XWinIMESetCompositionRect (Display* dpy, Window window,
-			    short cf_x, short cf_y,
-			   short cf_w, short cf_h)
-{
-  XExtDisplayInfo *info = find_display (dpy);
-  xWinIMESetCompositionRectReq *req;
-
-  TRACE("SetCompositionRect...");
-  WinIMECheckExtension (dpy, info, False);
-
-  LockDisplay(dpy);
-  GetReq(WinIMESetCompositionRect, req);
-  req->reqType = info->codes->major_opcode;
-  req->imeReqType = X_WinIMESetCompositionRect;
-  req->window = window;
+  req->imeReqType = X_WinIMESetCompositionWindow;
+  req->context = context;
+  req->style = style;
   req->ix = cf_x;
   req->iy = cf_y;
   req->iw = cf_w;
@@ -345,12 +289,12 @@ XWinIMESetCompositionRect (Display* dpy, Window window,
 
   UnlockDisplay(dpy);
   SyncHandle();
-  TRACE("SetCompositionRect... return True");
+  TRACE("SetCompositionWindow... return True");
   return True;
 }
 
 Bool
-XWinIMEGetCompositionString (Display *dpy, Window window,
+XWinIMEGetCompositionString (Display *dpy, int context,
 			     int count,
 			     char* str_return)
 {
@@ -366,7 +310,7 @@ XWinIMEGetCompositionString (Display *dpy, Window window,
   GetReq(WinIMEGetCompositionString, req);
   req->reqType = info->codes->major_opcode;
   req->imeReqType = X_WinIMEGetCompositionString;
-  req->window = window;
+  req->context = context;
   rep.strLength = 0;
 
   if (!_XReply(dpy, (xReply *)&rep, 0, xFalse))
@@ -401,71 +345,24 @@ XWinIMEGetCompositionString (Display *dpy, Window window,
   return True;
 }
 
-#if 0
 Bool
-XWindowsWMFrameGetRect (Display* dpy, unsigned int frame_style,
-			unsigned int frame_style_ex, unsigned int frame_rect,
-			short ix, short iy, short iw, short ih,
-			short *rx, short *ry, short *rw, short *rh)
+XWinIMESetFocus (Display* dpy, int context, Bool focus)
 {
   XExtDisplayInfo *info = find_display (dpy);
-  xWindowsWMFrameGetRectReply rep;
-  xWindowsWMFrameGetRectReq *req;
-  
-  TRACE("FrameGetRect...");
-  WindowsWMCheckExtension (dpy, info, False);
-  
-  LockDisplay(dpy);
-  GetReq(WindowsWMFrameGetRect, req);
-  req->reqType = info->codes->major_opcode;
-  req->imeReqType = X_WindowsWMFrameGetRect;
-  req->frame_style = frame_style;
-  req->frame_style_ex = frame_style_ex;
-  req->frame_rect = frame_rect;
-  req->ix = ix;
-  req->iy = iy;
-  req->iw = iw;
-  req->ih = ih;
-  rep.x = rep.y = rep.w = rep.h = 0;
-  if (!_XReply(dpy, (xReply *)&rep, 0, xFalse))
-    {
-      UnlockDisplay(dpy);
-      SyncHandle();
-      TRACE("FrameGetRect... return False");
-      return False;
-    }
-  *rx = rep.x; *ry = rep.y;
-  *rw = rep.w; *rh = rep.h;
-  UnlockDisplay(dpy);
-  SyncHandle();
-  TRACE("FrameGetRect... return True");
-  return True;
-}
+  xWinIMESetFocusReq *req;
 
-Bool
-XWindowsWMFrameSetTitle (Display* dpy, int screen, Window window,
-			 unsigned int title_length, const char *title_bytes)
-{
-  XExtDisplayInfo *info = find_display (dpy);
-  xWindowsWMFrameSetTitleReq *req;
-  
-  TRACE("FrameSetTitle...");
-  WindowsWMCheckExtension (dpy, info, False);
-  
+  TRACE("IMESetFocus...");
+  WinIMECheckExtension (dpy, info, False);
+
   LockDisplay(dpy);
-  GetReq(WindowsWMFrameSetTitle, req);
+  GetReq(WinIMESetFocus, req);
   req->reqType = info->codes->major_opcode;
-  req->imeReqType = X_WindowsWMFrameSetTitle;
-  req->screen = screen;
-  req->window = window;
-  req->title_length = title_length;
-  
-  req->length += (title_length + 3)>>2;
-  Data (dpy, title_bytes, title_length);
-  
+  req->imeReqType = X_WinIMESetFocus;
+  req->context = context;
+  req->focus = focus;
   UnlockDisplay(dpy);
   SyncHandle();
-  TRACE("FrameSetTitle... return True");
+  TRACE("IMESetFocus... return True");
+
   return True;
 }
-#endif

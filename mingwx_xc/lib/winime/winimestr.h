@@ -63,25 +63,9 @@ typedef struct {
 } xWinIMEQueryVersionReply;
 #define sz_xWinIMEQueryVersionReply	32
 
-typedef struct _WinIMEEnable {
-    CARD8	reqType;		/* always IMEReqCode */
-    CARD8	imeReqType;		/* always X_WMReenableUpdate */
-    CARD16	length B16;
-    CARD32	window B32;
-} xWinIMEEnableReq;
-#define sz_xWinIMEEnableReq	8
-
-typedef struct _WinIMEDisable {
-    CARD8	reqType;		/* always IMEReqCode */
-    CARD8	imeReqType;		/* always X_WMDisableUpdate */
-    CARD16	length B16;
-    CARD32	window B32;
-} xWinIMEDisableReq;
-#define sz_xWinIMEDisableReq	8
-
 typedef struct _WinIMESelectInput {
     CARD8	reqType;		/* always IMEReqCode */
-    CARD8	imeReqType;		/* always X_WMSelectInput */
+    CARD8	imeReqType;		/* always X_IMESelectInput */
     CARD16	length B16;
     CARD32	mask B32;
 } xWinIMESelectInputReq;
@@ -91,57 +75,61 @@ typedef struct _WinIMENotify {
 	BYTE	type;		/* always eventBase + event type */
 	BYTE	kind;
 	CARD16	sequenceNumber B16;
-	Window	window B32;
+	CARD32	context B32;
 	Time	time B32;	/* time of change */
 	CARD16	pad1 B16;
 	CARD32	arg B32;
 } xWinIMENotifyEvent;
 #define sz_xWinIMENotifyEvent	18
 
-typedef struct _WinIMEOpen {
+typedef struct _WinIMECreateContext {
     CARD8	reqType;		/* always IMEReqCode */
-    CARD8	imeReqType;		/* always X_WMReenableUpdate */
+    CARD8	imeReqType;		/* always X_WinIMECreateContext */
     CARD16	length B16;
-    CARD32	window B32;
-} xWinIMEOpenReq;
-#define sz_xWinIMEOpenReq	8
+} xWinIMECreateContextReq;
+#define sz_xWinIMECreateContextReq	4
 
-typedef struct _WinIMEClose {
+typedef struct {
+    BYTE	type;			/* X_Reply */
+    BOOL	pad1;
+    CARD16	sequenceNumber B16;
+    CARD32	length B32;
+    CARD32	context B32;		/* input context */
+    CARD32	pad2 B32;
+    CARD32	pad3 B32;
+    CARD32	pad4 B32;
+    CARD32	pad5 B32;
+    CARD32	pad6 B32;
+} xWinIMECreateContextReply;
+#define sz_xWinIMECreateContextReply	32
+
+typedef struct _WinIMESetOpenStetus {
     CARD8	reqType;		/* always IMEReqCode */
-    CARD8	imeReqType;		/* always X_IMEClose */
+    CARD8	imeReqType;		/* always X_IMEOpenStatus */
     CARD16	length B16;
-    CARD32	window B32;
-} xWinIMECloseReq;
-#define sz_xWinIMECloseReq	8
+    CARD32	context B32;
+    CARD32	state B32;
+} xWinIMESetOpenStatusReq;
+#define sz_xWinIMESetOpenStatusReq	12
 
-typedef struct _WinIMESetCompositionPoint {
-    CARD8	reqType;		/* always WMReqCode */
+typedef struct _WinIMESetCompositionWindow {
+    CARD8	reqType;		/* always IMEReqCode */
     CARD8	imeReqType;		/* always X_IMESetCompositionPoint */
     CARD16	length B16;
-    CARD32	window B32;
-    INT16	ix B16;
-    INT16	iy B16;
-    CARD32	pad1 B32;
-} xWinIMESetCompositionPointReq;
-#define sz_xWinIMESetCompositionPointReq	16
-
-typedef struct _WinIMESetCompositionRect {
-    CARD8	reqType;		/* always WMReqCode */
-    CARD8	imeReqType;		/* always X_IMESetCompositionRect */
-    CARD16	length B16;
-    CARD32	window B32;
+    CARD32	style B32;
+    CARD32	context B32;
     INT16	ix B16;
     INT16	iy B16;
     INT16	iw B16;
     INT16	ih B16;
-} xWinIMESetCompositionRectReq;
-#define sz_xWinIMESetCompositionRectReq	16
+} xWinIMESetCompositionWindowReq;
+#define sz_xWinIMESetCompositionWindowReq	20
 
 typedef struct _WinIMEGetCompositionString {
-    CARD8	reqType;		/* always WMReqCode */
+    CARD8	reqType;		/* always IMEReqCode */
     CARD8	imeReqType;		/* always X_IMEGetCompositionString */
     CARD16	length B16;
-    CARD32	window B32;
+    CARD32	context B32;
 } xWinIMEGetCompositionStringReq;
 #define sz_xWinIMEGetCompositionStringReq	8
 
@@ -159,5 +147,14 @@ typedef struct {
     CARD32 pad7 B32;
 } xWinIMEGetCompositionStringReply;
 #define sz_xWinIMEGetCompositionStringReply	32
+
+typedef struct _WinIMESetFocus {
+    CARD8	reqType;		/* always IMEReqCode */
+    CARD8	imeReqType;		/* always X_IMESetFocus */
+    CARD16	length B16;
+    CARD32	context B32;
+    CARD32	focus B32;
+} xWinIMESetFocusReq;
+#define sz_xWinIMESetFocusReq	12
 
 #endif /* _WINIMESTR_H_ */

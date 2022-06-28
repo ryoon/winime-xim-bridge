@@ -1,5 +1,3 @@
-? cvs.diff
-? cvs2.diff
 ? lib/winime
 ? programs/Xserver/hw/xwin/winime.c
 Index: config/cf/X11.tmpl
@@ -8,7 +6,7 @@ RCS file: /cvs/xorg/xc/config/cf/X11.tmpl,v
 retrieving revision 1.38
 diff -u -r1.38 X11.tmpl
 --- config/cf/X11.tmpl	3 Dec 2004 03:33:25 -0000	1.38
-+++ config/cf/X11.tmpl	23 Dec 2004 04:40:01 -0000
++++ config/cf/X11.tmpl	3 Jan 2005 17:24:46 -0000
 @@ -708,6 +708,10 @@
  #define BuildWindowsWMLibrary	NO
  #endif
@@ -74,7 +72,7 @@ RCS file: /cvs/xorg/xc/config/cf/cygwin.cf,v
 retrieving revision 1.17
 diff -u -r1.17 cygwin.cf
 --- config/cf/cygwin.cf	15 Nov 2004 15:06:52 -0000	1.17
-+++ config/cf/cygwin.cf	23 Dec 2004 04:40:01 -0000
++++ config/cf/cygwin.cf	3 Jan 2005 17:24:46 -0000
 @@ -314,6 +314,10 @@
  # define BuildWindowsWMLibrary	NO
  #endif /* BuildXWinMultiWindowExtWM && BuildWindowsWMLibrary */
@@ -112,7 +110,7 @@ RCS file: /cvs/xorg/xc/config/cf/cygwin.rules,v
 retrieving revision 1.9
 diff -u -r1.9 cygwin.rules
 --- config/cf/cygwin.rules	2 Sep 2004 01:10:28 -0000	1.9
-+++ config/cf/cygwin.rules	23 Dec 2004 04:40:01 -0000
++++ config/cf/cygwin.rules	3 Jan 2005 17:24:46 -0000
 @@ -31,6 +31,7 @@
  #define SharedLibDpsTk		YES
  #define SharedLibGlu		YES
@@ -127,7 +125,7 @@ RCS file: /cvs/xorg/xc/config/cf/mingw.cf,v
 retrieving revision 1.3
 diff -u -r1.3 mingw.cf
 --- config/cf/mingw.cf	2 Dec 2004 13:38:30 -0000	1.3
-+++ config/cf/mingw.cf	23 Dec 2004 04:40:02 -0000
++++ config/cf/mingw.cf	3 Jan 2005 17:24:46 -0000
 @@ -301,6 +301,10 @@
  # define BuildWindowsWMLibrary	NO
  #endif /* BuildXWinMultiWindowExtWM && BuildWindowsWMLibrary */
@@ -145,7 +143,7 @@ RCS file: /cvs/xorg/xc/lib/Imakefile,v
 retrieving revision 1.11
 diff -u -r1.11 Imakefile
 --- lib/Imakefile	29 Sep 2004 12:40:28 -0000	1.11
-+++ lib/Imakefile	23 Dec 2004 04:40:17 -0000
++++ lib/Imakefile	3 Jan 2005 17:24:53 -0000
 @@ -161,6 +161,10 @@
  WINDOWSLIBDIR = windows
  #endif
@@ -167,81 +165,13 @@ diff -u -r1.11 Imakefile
  
  SUBDIRS = $(BERKDIR) xtrans $(LINTSUBDIRS) $(FONTSUBDIR) $(FONTENCSUBDIR) \
            $(FONTCACHELIBDIR)
-Index: lib/windows/windowswm.h
-===================================================================
-RCS file: /cvs/xorg/xc/lib/windows/windowswm.h,v
-retrieving revision 1.2
-diff -u -r1.2 windowswm.h
---- lib/windows/windowswm.h	26 Jul 2004 19:15:48 -0000	1.2
-+++ lib/windows/windowswm.h	23 Dec 2004 04:40:23 -0000
-@@ -1,33 +1,32 @@
- /*
-- * WindowsWM extension is based on AppleWM extension
-- * Authors:	Kensuke Matsuzaki
-+ *Copyright (C) 2004 Kensuke Matsuzaki. All Rights Reserved.
-+ *
-+ *Permission is hereby granted, free of charge, to any person obtaining
-+ * a copy of this software and associated documentation files (the
-+ *"Software"), to deal in the Software without restriction, including
-+ *without limitation the rights to use, copy, modify, merge, publish,
-+ *distribute, sublicense, and/or sell copies of the Software, and to
-+ *permit persons to whom the Software is furnished to do so, subject to
-+ *the following conditions:
-+ *
-+ *The above copyright notice and this permission notice shall be
-+ *included in all copies or substantial portions of the Software.
-+ *
-+ *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-+ *EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-+ *MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-+ *NONINFRINGEMENT. IN NO EVENT SHALL THE KENSUKE MATSUZAKI BE LIABLE FOR
-+ *ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-+ *CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-+ *WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-+ *
-+ *Except as contained in this notice, the name of the Kensuke Matsuzaki
-+ *shall not be used in advertising or otherwise to promote the sale, use
-+ *or other dealings in this Software without prior written authorization
-+ *from the Kensuke Matsuzaki Project.
-+ *
-+ * Authors:	Kensuke Matsuzaki <zakki@peppermint.jp>
-  */
--/**************************************************************************
--
--Copyright (c) 2002 Apple Computer, Inc.
--All Rights Reserved.
--
--Permission is hereby granted, free of charge, to any person obtaining a
--copy of this software and associated documentation files (the
--"Software"), to deal in the Software without restriction, including
--without limitation the rights to use, copy, modify, merge, publish,
--distribute, sub license, and/or sell copies of the Software, and to
--permit persons to whom the Software is furnished to do so, subject to
--the following conditions:
--
--The above copyright notice and this permission notice (including the
--next paragraph) shall be included in all copies or substantial portions
--of the Software.
--
--THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
--OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
--MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
--IN NO EVENT SHALL PRECISION INSIGHT AND/OR ITS SUPPLIERS BE LIABLE FOR
--ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
--TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
--SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
--
--**************************************************************************/
- 
- #ifndef _WINDOWSWM_H_
- #define _WINDOWSWM_H_
 Index: programs/Xserver/Imakefile
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/Imakefile,v
 retrieving revision 1.25
 diff -u -r1.25 Imakefile
 --- programs/Xserver/Imakefile	6 Dec 2004 12:51:42 -0000	1.25
-+++ programs/Xserver/Imakefile	23 Dec 2004 04:40:26 -0000
++++ programs/Xserver/Imakefile	3 Jan 2005 17:24:56 -0000
 @@ -1019,13 +1019,18 @@
  #else
  XWINOPENGLLIB = 
@@ -268,7 +198,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/Imakefile,v
 retrieving revision 1.7
 diff -u -r1.7 Imakefile
 --- programs/Xserver/hw/xwin/Imakefile	3 Dec 2004 12:04:15 -0000	1.7
-+++ programs/Xserver/hw/xwin/Imakefile	23 Dec 2004 04:40:36 -0000
++++ programs/Xserver/hw/xwin/Imakefile	3 Jan 2005 17:24:59 -0000
 @@ -56,6 +56,11 @@
  	winwindowswm.c
  #endif
@@ -324,8 +254,18 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/win.h,v
 retrieving revision 1.12
 diff -u -r1.12 win.h
 --- programs/Xserver/hw/xwin/win.h	8 Dec 2004 15:48:15 -0000	1.12
-+++ programs/Xserver/hw/xwin/win.h	23 Dec 2004 04:40:36 -0000
-@@ -1441,6 +1441,18 @@
++++ programs/Xserver/hw/xwin/win.h	3 Jan 2005 17:25:00 -0000
+@@ -1310,6 +1310,9 @@
+ winWindowProc (HWND hWnd, UINT message, 
+ 	       WPARAM wParam, LPARAM lParam);
+ 
++void
++winProcessMessage (LPMSG lpMsg);
++
+ 
+ #ifdef XWIN_MULTIWINDOWEXTWM
+ /*
+@@ -1441,6 +1444,24 @@
  Bool
  winInitCursor (ScreenPtr pScreen);
  
@@ -338,7 +278,13 @@ diff -u -r1.12 win.h
 +winWinIMEExtensionInit ();
 +
 +void
-+winWinIMESendEvent (int type, unsigned int mask, int kind, int arg, Window window);
++winWinIMESendEvent (int type, unsigned int mask, int kind, int arg, int context);
++
++int
++winHIMCtoContext (DWORD hIMC);
++
++void
++winCommitCompositionResult (int context, char *pszStr);
 +#endif
 +
  /*
@@ -350,7 +296,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winblock.c,v
 retrieving revision 1.4
 diff -u -r1.4 winblock.c
 --- programs/Xserver/hw/xwin/winblock.c	15 Nov 2004 15:06:47 -0000	1.4
-+++ programs/Xserver/hw/xwin/winblock.c	23 Dec 2004 04:40:36 -0000
++++ programs/Xserver/hw/xwin/winblock.c	3 Jan 2005 17:25:00 -0000
 @@ -39,6 +39,7 @@
  extern HWND			g_hDlgDepthChange;
  extern HWND			g_hDlgExit;
@@ -359,26 +305,22 @@ diff -u -r1.4 winblock.c
  
  
  /* See Porting Layer Definition - p. 6 */
-@@ -94,6 +95,12 @@
+@@ -94,7 +95,7 @@
  	  && (g_hDlgAbout == 0
  	      || !IsDialogMessage (g_hDlgAbout, &msg)))
  	{
-+#ifdef XWIN_WINIME
-+	  if (g_fIME)
-+	    {
-+	      TranslateMessage(&msg);
-+	    }
-+#endif
- 	  DispatchMessage (&msg);
+-	  DispatchMessage (&msg);
++	  winProcessMessage(&msg);
  	}
      }
+ }
 Index: programs/Xserver/hw/xwin/winconfig.c
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winconfig.c,v
 retrieving revision 1.8
 diff -u -r1.8 winconfig.c
 --- programs/Xserver/hw/xwin/winconfig.c	8 Dec 2004 15:48:15 -0000	1.8
-+++ programs/Xserver/hw/xwin/winconfig.c	23 Dec 2004 04:40:37 -0000
++++ programs/Xserver/hw/xwin/winconfig.c	3 Jan 2005 17:25:00 -0000
 @@ -39,6 +39,16 @@
  #include "XKBsrv.h"
  #endif
@@ -415,7 +357,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winglobals.c,v
 retrieving revision 1.5
 diff -u -r1.5 winglobals.c
 --- programs/Xserver/hw/xwin/winglobals.c	22 Nov 2004 14:12:33 -0000	1.5
-+++ programs/Xserver/hw/xwin/winglobals.c	23 Dec 2004 04:40:37 -0000
++++ programs/Xserver/hw/xwin/winglobals.c	3 Jan 2005 17:25:01 -0000
 @@ -114,6 +114,15 @@
  #endif
  
@@ -438,7 +380,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winmultiwindowwindow.c,v
 retrieving revision 1.8
 diff -u -r1.8 winmultiwindowwindow.c
 --- programs/Xserver/hw/xwin/winmultiwindowwindow.c	5 Dec 2004 21:20:55 -0000	1.8
-+++ programs/Xserver/hw/xwin/winmultiwindowwindow.c	23 Dec 2004 04:40:37 -0000
++++ programs/Xserver/hw/xwin/winmultiwindowwindow.c	3 Jan 2005 17:25:01 -0000
 @@ -41,6 +41,9 @@
   */
  
@@ -449,21 +391,7 @@ diff -u -r1.8 winmultiwindowwindow.c
  
  extern void winSelectIcons(WindowPtr pWin, HICON *pIcon, HICON *pSmallIcon);
  
-@@ -103,6 +106,13 @@
-   pWinPriv->hWnd = NULL;
-   pWinPriv->pScreenPriv = winGetScreenPriv(pWin->drawable.pScreen);
-   pWinPriv->fXKilled = FALSE;
-+  pWinPriv->dwCompositionStyle = 0;
-+  pWinPriv->ptCompositionPos.x = 0;
-+  pWinPriv->ptCompositionPos.y = 0;
-+  pWinPriv->rcCompositionArea.left = 0;
-+  pWinPriv->rcCompositionArea.top = 0;
-+  pWinPriv->rcCompositionArea.right = 0;
-+  pWinPriv->rcCompositionArea.bottom = 0;
-  
-   return fResult;
- }
-@@ -605,7 +615,7 @@
+@@ -605,7 +608,7 @@
    HMODULE		hInstance;
    int			iReturn;
    char			pszClass[512];
@@ -472,26 +400,22 @@ diff -u -r1.8 winmultiwindowwindow.c
  #if CYGMULTIWINDOW_DEBUG
    ErrorF ("winDestroyWindowsWindow\n");
  #endif
-@@ -631,6 +641,12 @@
+@@ -631,7 +634,7 @@
      {
        if (g_hDlgDepthChange == 0 || !IsDialogMessage (g_hDlgDepthChange, &msg))
  	{
-+#ifdef XWIN_WINIME
-+	  if (g_fIME)
-+	    {
-+	      TranslateMessage(&msg);
-+	    }
-+#endif
- 	  DispatchMessage (&msg);
+-	  DispatchMessage (&msg);
++	  winProcessMessage(&msg);
  	}
      }
+ 
 Index: programs/Xserver/hw/xwin/winmultiwindowwndproc.c
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winmultiwindowwndproc.c,v
 retrieving revision 1.4
 diff -u -r1.4 winmultiwindowwndproc.c
 --- programs/Xserver/hw/xwin/winmultiwindowwndproc.c	15 Sep 2004 17:58:50 -0000	1.4
-+++ programs/Xserver/hw/xwin/winmultiwindowwndproc.c	23 Dec 2004 04:40:38 -0000
++++ programs/Xserver/hw/xwin/winmultiwindowwndproc.c	3 Jan 2005 17:25:01 -0000
 @@ -38,6 +38,12 @@
  #if CYGDEBUG
  #include "winmessages.h"
@@ -511,43 +435,40 @@ diff -u -r1.4 winmultiwindowwndproc.c
  
 +#ifdef XWIN_WINIME
 +      /* Disable IME by default */
-+      ImmAssociateContext (hwnd, (HIMC) NULL);
++      //ImmAssociateContext (hwnd, (HIMC) NULL);
 +#endif
 +
        /*
         * Make X windows' Z orders sync with Windows windows because
         * there can be AlwaysOnTop windows overlapped on the window
-@@ -1051,6 +1062,111 @@
+@@ -1051,6 +1062,121 @@
  	}
        break;
  
 +#ifdef XWIN_WINIME
 +    case WM_IME_NOTIFY:
++      ErrorF ("winTopLevelWindowProc - WM_IME_NOTIFY\n");
 +      {
 +	if (wParam == IMN_SETOPENSTATUS)
 +	  {
 +	    HIMC hIMC = ImmGetContext(hwnd);
-+	    if (ImmGetOpenStatus(hIMC)) {
-+	      winWinIMESendEvent (WinIMEControllerNotify,
-+				  WinIMENotifyMask,
-+				  WinIMEOpened,
-+				  0,
-+				  pWin->drawable.id);
-+	    } else {
-+	      winWinIMESendEvent (WinIMEControllerNotify,
-+				  WinIMENotifyMask,
-+				  WinIMEClosed,
-+				  0,
-+				  pWin->drawable.id);
-+	    }
++	    BOOL fStatus = ImmGetOpenStatus(hIMC);
++
++	    winWinIMESendEvent (WinIMEControllerNotify,
++				WinIMENotifyMask,
++				WinIMEOpenStatus,
++				fStatus,
++				winHIMCtoContext(hIMC));
 +	    ImmReleaseContext(hwnd, hIMC);
 +	  }
 +      }
 +      break;
 +
 +    case WM_IME_STARTCOMPOSITION:
++      ErrorF ("winTopLevelWindowProc - WM_IME_STARTCOMPOSITION\n");
 +      {
 +	HIMC hIMC = ImmGetContext(hwnd);
++#if 0
 +	COMPOSITIONFORM cf;
 +
 +	if (pWinPriv->dwCompositionStyle)
@@ -561,16 +482,18 @@ diff -u -r1.4 winmultiwindowwndproc.c
 +	    cf.rcArea.bottom = pWinPriv->rcCompositionArea.bottom;
 +	    ImmSetCompositionWindow(hIMC, &cf);
 +	  }
++#endif
++	winWinIMESendEvent (WinIMEControllerNotify,
++			    WinIMENotifyMask,
++			    WinIMEStartComposition,
++			    0,
++			    winHIMCtoContext(hIMC));
 +	ImmReleaseContext(hwnd, hIMC);
 +      }
-+      winWinIMESendEvent (WinIMEControllerNotify,
-+			  WinIMENotifyMask,
-+			  WinIMEStartComposition,
-+			  0,
-+			  pWin->drawable.id);
 +      break;
 +
 +    case WM_IME_COMPOSITION:
++      ErrorF ("winTopLevelWindowProc - WM_IME_STARTCOMPOSITION\n");
 +      {
 +	HIMC hIMC = ImmGetContext(hwnd);
 +
@@ -609,20 +532,31 @@ diff -u -r1.4 winmultiwindowwndproc.c
 +	  winDebug("WM_IME_COMPOSITION %s(%d/%d/%d)\n",
 +		   pszUTF8, iUTF8, strlen(pszUTF8), iUnicodeSize);
 +
-+	  if (pWinPriv->pszCompositionResult)
-+	    {
-+	      free (pWinPriv->pszCompositionResult);
-+	    }
++	  //if (pWinPriv->pszCompositionResult)
++	  //{
++	  //free (pWinPriv->pszCompositionResult);
++	  //}
 +
-+	  pWinPriv->pszCompositionResult = pszUTF8;
++	  winCommitCompositionResult (winHIMCtoContext(hIMC), pszUTF8);
++	  //pWinPriv->pszCompositionResult = pszUTF8;
 +	  free (pwszUnicodeStr);
++
 +	  winWinIMESendEvent (WinIMEControllerNotify,
 +			      WinIMENotifyMask,
 +			      WinIMEEndComposition,
 +			      0,
-+			      pWin->drawable.id);
++			      winHIMCtoContext(hIMC));
++	  ImmReleaseContext(hwnd, hIMC);
 +	}
 +      }
++      break;
++
++    case WM_IME_CHAR:
++      ErrorF ("winTopLevelWindowProc - WM_IME_CHAR\n");
++      break;
++
++    case WM_CHAR:
++      ErrorF ("winTopLevelWindowProc - WM_CHAR\n");
 +      break;
 +#endif
 +
@@ -635,7 +569,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winprocarg.c,v
 retrieving revision 1.9
 diff -u -r1.9 winprocarg.c
 --- programs/Xserver/hw/xwin/winprocarg.c	8 Dec 2004 15:48:15 -0000	1.9
-+++ programs/Xserver/hw/xwin/winprocarg.c	23 Dec 2004 04:40:38 -0000
++++ programs/Xserver/hw/xwin/winprocarg.c	3 Jan 2005 17:25:02 -0000
 @@ -54,6 +54,9 @@
  extern Bool			g_fNoHelpMessageBox;                     
  extern Bool			g_fSoftwareCursor;
@@ -671,7 +605,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winscrinit.c,v
 retrieving revision 1.8
 diff -u -r1.8 winscrinit.c
 --- programs/Xserver/hw/xwin/winscrinit.c	15 Nov 2004 15:06:48 -0000	1.8
-+++ programs/Xserver/hw/xwin/winscrinit.c	23 Dec 2004 04:40:38 -0000
++++ programs/Xserver/hw/xwin/winscrinit.c	3 Jan 2005 17:25:02 -0000
 @@ -75,6 +75,9 @@
  extern miPointerScreenFuncRec	g_winPointerCursorFuncs;
  extern int			g_iScreenPrivateIndex;
@@ -702,57 +636,23 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winwakeup.c,v
 retrieving revision 1.4
 diff -u -r1.4 winwakeup.c
 --- programs/Xserver/hw/xwin/winwakeup.c	15 Nov 2004 15:06:48 -0000	1.4
-+++ programs/Xserver/hw/xwin/winwakeup.c	23 Dec 2004 04:40:38 -0000
-@@ -42,6 +42,7 @@
- extern HWND			g_hDlgDepthChange;
- extern HWND			g_hDlgExit;
- extern HWND			g_hDlgAbout;
-+extern Bool			g_fIME;
- 
- 
- /* See Porting Layer Definition - p. 7 */
-@@ -63,6 +64,12 @@
++++ programs/Xserver/hw/xwin/winwakeup.c	3 Jan 2005 17:25:02 -0000
+@@ -63,7 +63,7 @@
  	  && (g_hDlgAbout == 0
  	      || !IsDialogMessage (g_hDlgAbout, &msg)))
  	{
-+#ifdef XWIN_WINIME
-+	  if (g_fIME)
-+	    {
-+	      TranslateMessage(&msg);
-+	    }
-+#endif
- 	  DispatchMessage (&msg);
+-	  DispatchMessage (&msg);
++	  winProcessMessage(&msg);
  	}
      }
-Index: programs/Xserver/hw/xwin/winwindow.h
-===================================================================
-RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winwindow.h,v
-retrieving revision 1.5
-diff -u -r1.5 winwindow.h
---- programs/Xserver/hw/xwin/winwindow.h	15 Nov 2004 15:06:48 -0000	1.5
-+++ programs/Xserver/hw/xwin/winwindow.h	23 Dec 2004 04:40:38 -0000
-@@ -81,6 +81,14 @@
- 
-   /* Privates used by both shadow fb DirectDraw servers */
-   LPDIRECTDRAWCLIPPER	pddcPrimary;
-+
-+#ifdef XWIN_WINIME
-+  /* Privates used by WinIME IME-XIM bridge */
-+  DWORD			dwCompositionStyle;
-+  POINT			ptCompositionPos;
-+  RECT			rcCompositionArea;
-+  char			*pszCompositionResult;
-+#endif
- } winPrivWinRec, *winPrivWinPtr;
- 
- #ifdef XWIN_MULTIWINDOW
+ }
 Index: programs/Xserver/hw/xwin/winwindowswm.c
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winwindowswm.c,v
 retrieving revision 1.2
 diff -u -r1.2 winwindowswm.c
 --- programs/Xserver/hw/xwin/winwindowswm.c	21 Jun 2004 13:19:32 -0000	1.2
-+++ programs/Xserver/hw/xwin/winwindowswm.c	23 Dec 2004 04:40:39 -0000
++++ programs/Xserver/hw/xwin/winwindowswm.c	3 Jan 2005 17:25:02 -0000
 @@ -240,7 +240,7 @@
         */
        if (!pHead)
@@ -762,3 +662,48 @@ diff -u -r1.2 winwindowswm.c
  	  if (!pHead ||
  	      !AddResource (eventResource, EventType, (pointer)pHead))
  	    {
+Index: programs/Xserver/hw/xwin/winwndproc.c
+===================================================================
+RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winwndproc.c,v
+retrieving revision 1.8
+diff -u -r1.8 winwndproc.c
+--- programs/Xserver/hw/xwin/winwndproc.c	15 Nov 2004 15:06:48 -0000	1.8
++++ programs/Xserver/hw/xwin/winwndproc.c	3 Jan 2005 17:25:03 -0000
+@@ -58,6 +58,7 @@
+ extern HWND			g_hwndKeyboardFocus;
+ extern Bool			g_fSoftwareCursor;
+ extern DWORD			g_dwCurrentThreadID;
++extern Bool			g_fIME;
+ 
+ /*
+  * Called by winWakeupHandler
+@@ -1257,3 +1258,29 @@
+ 
+   return DefWindowProc (hwnd, message, wParam, lParam);
+ }
++
++void
++winProcessMessage (LPMSG lpMsg)
++{
++#if 0
++  if (lpMsg->message == WM_KEYUP || lpMsg->message == WM_KEYDOWN)
++    {
++      winDebug("winProcessMessage %d\n", GetTickCount());
++      winDebug("msg:0x%02x wParam:0x%04x time:%d", lpMsg->message, lpMsg->wParam, lpMsg->time);
++      winDebug("lParam:count(0x%04x) scancode(0x%02x) flag(0x%x,0x%x,0x%x,0x%x)\n",
++	       LOWORD (lpMsg->lParam),
++	       LOBYTE (HIWORD (lpMsg->lParam)),
++	       (HIBYTE (HIWORD (lpMsg->lParam)) & 0x01) >> 0,
++	       (HIBYTE (HIWORD (lpMsg->lParam)) & 0x20) >> 5,
++	       (HIBYTE (HIWORD (lpMsg->lParam)) & 0x40) >> 6,
++	       (HIBYTE (HIWORD (lpMsg->lParam)) & 0x80) >> 7);
++    }
++#endif
++#ifdef XWIN_WINIME
++  if (g_fIME)
++    {
++      TranslateMessage(lpMsg);
++    }
++#endif
++  DispatchMessage (lpMsg);
++}

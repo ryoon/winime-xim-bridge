@@ -57,9 +57,10 @@ typedef struct _IC {
     Window	client_win;	/* client window */
     Window	focus_win;	/* focus window */
     char	*resource_name;	/* resource name */
-    char	*resource_class; /* resource class */
-    PreeditAttributes pre_attr; /* preedit attributes */
-    StatusAttributes sts_attr; /* status attributes */
+    char	*resource_class;/* resource class */
+    int		context;	/* */
+    PreeditAttributes pre_attr;	/* preedit attributes */
+    StatusAttributes sts_attr;	/* status attributes */
     struct _IC	*next;
 } IC;
 

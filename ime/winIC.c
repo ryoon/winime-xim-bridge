@@ -28,10 +28,12 @@ Author:
 
 #include <X11/Xlib.h>
 #include <X11/Xos.h>
+#include <X11/extensions/winime.h>
 #include "IMdkit/IMdkit.h"
 #include "IMdkit/Xi18n.h"
 #include "winIC.h"
 
+extern Display *dpy;
 static IC *ic_list = (IC *)NULL;
 static IC *free_list = (IC *)NULL;
 
@@ -66,20 +68,39 @@ IMChangeICStruct *call_data;
     register int i;
 
     for (i = 0; i < (int)call_data->ic_attr_num; i++, ic_attr++) {
-	if (!strcmp(XNInputStyle, ic_attr->name))
-	  rec->input_style = *(INT32*)ic_attr->value;
-	else if (!strcmp(XNClientWindow, ic_attr->name))
-	  rec->client_win = *(Window*)ic_attr->value;
-	else if (!strcmp(XNFocusWindow, ic_attr->name))
-	  rec->focus_win = *(Window*)ic_attr->value;
+      printf ("StoreIC: %s", pre_attr->name);
+      if (!strcmp(XNInputStyle, ic_attr->name))
+	rec->input_style = *(INT32*)ic_attr->value;
+      else if (!strcmp(XNClientWindow, ic_attr->name))
+	rec->client_win = *(Window*)ic_attr->value;
+      else if (!strcmp(XNFocusWindow, ic_attr->name))
+	rec->focus_win = *(Window*)ic_attr->value;
     }
     for (i = 0; i < (int)call_data->preedit_attr_num; i++, pre_attr++) {
+      printf ("StoreIC: %s", pre_attr->name);
 	if (!strcmp(XNArea, pre_attr->name))
-	  rec->pre_attr.area = *(XRectangle*)pre_attr->value;
+	  {
+	    rec->pre_attr.area = *(XRectangle*)pre_attr->value;
+	    printf ("StoreIC: XArea(%d, %d, %d, %d)\n",
+		    rec->pre_attr.area.x, rec->pre_attr.area.y,
+		    rec->pre_attr.area.width, rec->pre_attr.area.height);
+
+	    XWinIMESetCompositionPoint (dpy, rec->context,
+					rec->pre_attr.area.x, rec->pre_attr.area.y);
+	  }
 	else if (!strcmp(XNAreaNeeded, pre_attr->name))
-	  rec->pre_attr.area_needed = *(XRectangle*)pre_attr->value;
+	  {
+	    rec->pre_attr.area_needed = *(XRectangle*)pre_attr->value;
+	  }
 	else if (!strcmp(XNSpotLocation, pre_attr->name))
-	  rec->pre_attr.spot_location = *(XPoint*)pre_attr->value;
+	  {
+	    rec->pre_attr.spot_location = *(XPoint*)pre_attr->value;
+	    printf ("StoreIC: XNSpotLocation(%d,%d)\n",
+		    rec->pre_attr.spot_location.x, rec->pre_attr.spot_location.y);
+
+	    XWinIMESetCompositionPoint (dpy, rec->context,
+					rec->pre_attr.spot_location.x, rec->pre_attr.spot_location.y);
+	  }
 	else if (!strcmp(XNColormap, pre_attr->name))
 	  rec->pre_attr.cmap = *(Colormap*)pre_attr->value;
 	else if (!strcmp(XNStdColormap, pre_attr->name))
@@ -107,35 +128,44 @@ IMChangeICStruct *call_data;
 	  rec->pre_attr.cursor = *(Cursor*)pre_attr->value;
     }
     for (i = 0; i < (int)call_data->status_attr_num; i++, sts_attr++) {
-	if (!strcmp(XNArea, sts_attr->name))
+      printf ("StoreIC: %s", sts_attr->name);
+      if (!strcmp(XNArea, sts_attr->name))
+	{
 	  rec->sts_attr.area = *(XRectangle*)sts_attr->value;
-	else if (!strcmp(XNAreaNeeded, sts_attr->name))
-	  rec->sts_attr.area_needed = *(XRectangle*)sts_attr->value;
-	else if (!strcmp(XNColormap, sts_attr->name))
-	  rec->sts_attr.cmap = *(Colormap*)sts_attr->value;
-	else if (!strcmp(XNStdColormap, sts_attr->name))
-	  rec->sts_attr.cmap = *(Colormap*)sts_attr->value;
-	else if (!strcmp(XNForeground, sts_attr->name))
-	  rec->sts_attr.foreground = *(CARD32*)sts_attr->value;
-	else if (!strcmp(XNBackground, sts_attr->name))
-	  rec->sts_attr.background = *(CARD32*)sts_attr->value;
-	else if (!strcmp(XNBackgroundPixmap, sts_attr->name))
-	  rec->sts_attr.bg_pixmap = *(Pixmap*)sts_attr->value;
-	else if (!strcmp(XNFontSet, sts_attr->name)) {
-	    int str_length = strlen(sts_attr->value);
-	    if (rec->sts_attr.base_font != NULL) {
-		if (strcmp(rec->sts_attr.base_font, sts_attr->value)) {
-		    XFree(rec->sts_attr.base_font);
-		} else {
-		    continue;
-		}
-	    }
-	    rec->sts_attr.base_font = malloc(str_length + 1);
-	    strcpy(rec->sts_attr.base_font, sts_attr->value);
-	} else if (!strcmp(XNLineSpace, sts_attr->name))
-	  rec->sts_attr.line_space= *(CARD32*)sts_attr->value;
-	else if (!strcmp(XNCursor, sts_attr->name))
-	  rec->sts_attr.cursor = *(Cursor*)sts_attr->value;
+	  printf ("StoreIC: XArea(%d, %d, %d, %d)\n",
+		  rec->sts_attr.area.x, rec->sts_attr.area.y,
+		  rec->sts_attr.area.width, rec->sts_attr.area.height);
+	  XWinIMESetCompositionRect (dpy, rec->context,
+				     rec->pre_attr.area.x, rec->sts_attr.area.y,
+				     rec->sts_attr.area.width, rec->sts_attr.area.height);
+	}
+      else if (!strcmp(XNAreaNeeded, sts_attr->name))
+	rec->sts_attr.area_needed = *(XRectangle*)sts_attr->value;
+      else if (!strcmp(XNColormap, sts_attr->name))
+	rec->sts_attr.cmap = *(Colormap*)sts_attr->value;
+      else if (!strcmp(XNStdColormap, sts_attr->name))
+	rec->sts_attr.cmap = *(Colormap*)sts_attr->value;
+      else if (!strcmp(XNForeground, sts_attr->name))
+	rec->sts_attr.foreground = *(CARD32*)sts_attr->value;
+      else if (!strcmp(XNBackground, sts_attr->name))
+	rec->sts_attr.background = *(CARD32*)sts_attr->value;
+      else if (!strcmp(XNBackgroundPixmap, sts_attr->name))
+	rec->sts_attr.bg_pixmap = *(Pixmap*)sts_attr->value;
+      else if (!strcmp(XNFontSet, sts_attr->name)) {
+	int str_length = strlen(sts_attr->value);
+	if (rec->sts_attr.base_font != NULL) {
+	  if (strcmp(rec->sts_attr.base_font, sts_attr->value)) {
+	    XFree(rec->sts_attr.base_font);
+	  } else {
+	    continue;
+	  }
+	}
+	rec->sts_attr.base_font = malloc(str_length + 1);
+	strcpy(rec->sts_attr.base_font, sts_attr->value);
+      } else if (!strcmp(XNLineSpace, sts_attr->name))
+	rec->sts_attr.line_space= *(CARD32*)sts_attr->value;
+      else if (!strcmp(XNCursor, sts_attr->name))
+	rec->sts_attr.cursor = *(Cursor*)sts_attr->value;
     }
 
 }

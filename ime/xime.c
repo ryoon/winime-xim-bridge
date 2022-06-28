@@ -26,6 +26,7 @@ Author:
 			(tajima@kobe.hp.com)
 ******************************************************************/
 #include <stdio.h>
+#include <string.h>
 #include <X11/Xlocale.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -41,7 +42,7 @@ Author:
 /* flags for debugging */
 Bool use_tcp = False;		/* Using TCP/IP Transport or not */
 Bool use_local = False;		/* Using Unix domain Tranport or not */
-long filter_mask = KeyPressMask;
+long filter_mask = KeyPressMask|KeyReleaseMask;
 int ime_event_base = 0;
 int ime_error_base = 0;
 Bool preedit_state_flag = False;
@@ -49,15 +50,20 @@ Bool preedit_state_changed = False;
 #define COMPOSITION_STRING_BUFFER 1024
 char composition_string[COMPOSITION_STRING_BUFFER];
 Display *dpy;
+CARD16 last_connect_id;
+CARD16 last_icid;
 XIMS g_ims;
+int g_major_code;
+int g_minor_code;
 
 /* Supported Inputstyles */
 static XIMStyle Styles[] = {
-    XIMPreeditCallbacks|XIMStatusCallbacks,
+  //XIMPreeditCallbacks|XIMStatusCallbacks,
     XIMPreeditPosition|XIMStatusArea,
     XIMPreeditPosition|XIMStatusNothing,
-    XIMPreeditArea|XIMStatusArea,
-    XIMPreeditNothing|XIMStatusNothing,
+    XIMPreeditPosition|XIMStatusNone,
+    //XIMPreeditArea|XIMStatusArea,
+    //XIMPreeditNothing|XIMStatusNothing,
     0
 };
 
@@ -106,26 +112,36 @@ Bool
 MySetICValuesHandler(XIMS ims, IMChangeICStruct *call_data)
 {
   printf ("%s\n", __FUNCTION__);
-  SetIC(call_data);
+  SetIC (call_data);
   return True;
 }
 
 Bool
 MyOpenHandler(XIMS ims, IMOpenStruct *call_data)
 {
-#ifdef DEBUG
-  printf("new_client lang is %s\n", call_data->lang.name);
-#endif
   printf ("%s\n", __FUNCTION__);
+  printf ("new_client lang is %s\n", call_data->lang.name);
   return True;
 }
 
-MyCreateICHandler(ims, call_data)
-XIMS ims;
-IMChangeICStruct *call_data;
+Bool
+MyCreateICHandler(XIMS ims, IMChangeICStruct* call_data)
 {
+  IC *rec;
   printf ("%s\n", __FUNCTION__);
   CreateIC(call_data);
+
+  rec = FindIC(call_data->icid);
+
+  if (rec)
+    {
+      XWinIMECreateContext (dpy, &rec->context);
+      printf ("%d\n", rec->context);
+    }
+  else
+    {
+      printf ("IC isn't found\n");
+    }
   return True;
 }
 
@@ -181,9 +197,22 @@ Bool
 MyForwardEventHandler(XIMS ims, IMForwardEventStruct *call_data)
 {
   printf ("%s\n", __FUNCTION__);
+#if 0
+  printf ("\t%d\n", call_data->event.type);
 
+  if (call_data->event.type != KeyPress || call_data->event.type != KeyRelease)
+    {
+      XWinIMEFilterKeyEvent (dpy, call_data->event.type,
+			     call_data->event.xkey.keycode, call_data->event.xkey.state);
+    }
+#endif
   /* Lookup KeyPress Events only */
   if (call_data->event.type != KeyPress) return True;
+
+  last_connect_id = call_data->connect_id;
+  last_icid = call_data->icid;
+  g_major_code = call_data->major_code;
+  g_minor_code = call_data->minor_code;
 
 #if 0
   //XXX: Use extension event
@@ -228,6 +257,8 @@ MyForwardEventHandler(XIMS ims, IMForwardEventStruct *call_data)
       return IMPreeditEnd(ims, (XPointer)call_data);
     }
   }
+
+#if 0
   if (strlen(composition_string) > 0){
     XTextProperty tp;
     char *str = composition_string;
@@ -238,9 +269,10 @@ MyForwardEventHandler(XIMS ims, IMForwardEventStruct *call_data)
 				XCompoundTextStyle, &tp);
     ((IMCommitStruct*)call_data)->flag |= XimLookupChars;
     ((IMCommitStruct*)call_data)->commit_string = (char *)tp.value;
-    IMCommitString(ims, (XPointer)call_data);
+    IMCommitString (ims, (XPointer)call_data);
     composition_string[0] = '\0';
   }
+#endif
   if (IsMatchKeys(ims, call_data, Forward_Keys)) {
     IMForwardEvent(ims, (XPointer)call_data);
   } else {
@@ -250,6 +282,28 @@ MyForwardEventHandler(XIMS ims, IMForwardEventStruct *call_data)
       IMForwardEvent(ims, (XPointer)call_data);
     }
   }
+  return True;
+}
+
+Bool
+MySetICFocusHandler(XIMS ims, IMChangeFocusStruct *call_data)
+{
+  IC *rec;
+  printf ("%s\n", __FUNCTION__);
+  rec = FindIC(call_data->icid);
+
+  XWinIMESetFocus (dpy, rec->context);
+  return True;
+}
+
+Bool
+MyUnsetICFocusHandler(XIMS ims, IMChangeFocusStruct *call_data)
+{
+  IC *rec;
+  printf ("%s\n", __FUNCTION__);
+  rec = FindIC(call_data->icid);
+
+  XWinIMEUnsetFocus (dpy, rec->context);
   return True;
 }
 
@@ -295,6 +349,14 @@ MyPreeditCaretReplyHandler(XIMS ims, IMPreeditCBStruct *call_data)
 }
 
 Bool
+MyMoveStructHandler(XIMS ims, IMMoveStruct *call_data)
+{
+  printf ("%s\n", __FUNCTION__);
+  printf ("%d, %d\n", call_data->x, call_data->y);
+  return True;
+}
+
+Bool
 MyProtoHandler(XIMS ims, IMProtocol *call_data)
 {
   printf ("%s\n", __FUNCTION__);
@@ -303,33 +365,37 @@ MyProtoHandler(XIMS ims, IMProtocol *call_data)
     MyOpenHandler(ims, (IMOpenStruct*)call_data);
     break;
   case XIM_CREATE_IC:
-    MyCreateICHandler(ims, call_data);
+    MyCreateICHandler(ims, (IMChangeICStruct*)call_data);
     break;
   case XIM_DESTROY_IC:
     break;
   case XIM_SET_IC_VALUES:
-    MySetICValuesHandler(ims, call_data);
+    MySetICValuesHandler(ims, (IMChangeICStruct*)call_data);
     break;
   case XIM_GET_IC_VALUES:
-    MyGetICValuesHandler(ims, call_data);
+    MyGetICValuesHandler(ims, (IMChangeICStruct*)call_data);
     break;
   case XIM_FORWARD_EVENT:
-    MyForwardEventHandler(ims, call_data);
+    MyForwardEventHandler(ims, (IMForwardEventStruct*)call_data);
     break;
   case XIM_SET_IC_FOCUS:
+    MySetICFocusHandler(ims, (IMChangeFocusStruct*)call_data);
     break;
   case XIM_UNSET_IC_FOCUS:
+    MyUnsetICFocusHandler(ims, (IMChangeFocusStruct*)call_data);
     break;
   case XIM_RESET_IC:
     break;
   case XIM_TRIGGER_NOTIFY:
-    MyTriggerNotifyHandler(ims, call_data);
+    MyTriggerNotifyHandler(ims, (IMTriggerNotifyStruct*)call_data);
     break;
   case XIM_PREEDIT_START_REPLY:
-    MyPreeditStartReplyHandler(ims, call_data);
+    MyPreeditStartReplyHandler(ims, (IMPreeditCBStruct*)call_data);
     break;
   case XIM_PREEDIT_CARET_REPLY:
-    MyPreeditCaretReplyHandler(ims, call_data);
+    MyPreeditCaretReplyHandler(ims, (IMPreeditCBStruct*)call_data);
+  case XIM_EXT_MOVE:
+    MyMoveStructHandler(ims, (IMMoveStruct*)call_data);
     break;
   }
   return True;
@@ -380,12 +446,33 @@ MyXEventHandler(Window im_window, XEvent *event)
 
 	  preedit_state_flag = False;
 	  preedit_state_changed = True;
-	  if (!XWinIMEGetCompositionString (dpy, ime_event->window,
+	  if (!XWinIMEGetCompositionString (dpy, ime_event->context,
 					    COMPOSITION_STRING_BUFFER,
 					    composition_string))
 	    {
 	      printf("XWinIMEGetCompositionString failed.\n");
 	    }
+
+	  if (strlen(composition_string) > 0){
+	    XTextProperty tp;
+	    char *str = composition_string;
+	    IMCommitStruct call_data;
+
+	    printf ("commit: %s\n", composition_string);
+	    setlocale(LC_CTYPE, "");
+	    Xutf8TextListToTextProperty(dpy, (char **)&str, 1,
+					XCompoundTextStyle, &tp);
+
+	    call_data.connect_id = last_connect_id;
+	    call_data.icid = last_icid;
+	    call_data.major_code = g_major_code;
+	    call_data.minor_code = g_minor_code;
+
+	    call_data.flag = XimLookupChars;
+	    call_data.commit_string = (char *)tp.value;
+	    IMCommitString(g_ims, (XPointer)&call_data);
+	    composition_string[0] = '\0';
+	  }
 	}
 	break;
       default:
@@ -398,6 +485,12 @@ MyXEventHandler(Window im_window, XEvent *event)
  Exit:
   XDestroyWindow(event->xbutton.display, im_window);
   exit(0);
+}
+int ErrorHandler (Display *dpy, XErrorEvent *ev)
+{
+  printf("Error occurred.\n");
+
+  return 0;
 }
 
 int
@@ -432,6 +525,7 @@ main(int argc, char **argv)
 	fprintf(stderr, "Can't Open Display: %s\n", display_name);
 	exit(1);
     }
+    XSetErrorHandler(ErrorHandler);
 
     if(!XWinIMEQueryExtension (dpy, &ime_event_base, &ime_error_base)){
 	fprintf(stderr, "No IME Extension\n");

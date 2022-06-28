@@ -42,9 +42,12 @@
 //#include "swaprep.h"
 #define _WINIME_SERVER_
 #include "winimestr.h"
+#include "winkeynames.h"
 #include <imm.h>
 
 #define CYGIME_DEBUG TRUE
+
+extern Bool g_fIME;
 
 static int WinIMEErrorBase;
 
@@ -69,10 +72,167 @@ static void SNotifyEvent(xWinIMENotifyEvent *from, xWinIMENotifyEvent *to);
 typedef struct _WinIMEEvent *WinIMEEventPtr;
 typedef struct _WinIMEEvent {
   WinIMEEventPtr	next;
-  ClientPtr	client;
-  XID		clientResource;
-  unsigned int	mask;
+  ClientPtr		client;
+  XID			clientResource;
+  unsigned int		mask;
 } WinIMEEventRec;
+
+typedef struct _WIContext *WIContextPtr;
+typedef struct _WIContext {
+  WIContextPtr		pNext;
+  int			nContext;
+  HIMC			hIMC;
+  DWORD			dwCompositionStyle;
+  POINT			ptCompositionPos;
+  RECT			rcCompositionArea;
+  char			*pszCompositionResult;
+} WIContextRec;
+
+static int s_nContextMax = 0;
+static WIContextPtr s_pContextList = NULL;
+
+static WIContextPtr
+NewContext()
+{
+  WIContextPtr pWIC;
+
+#if CYGIME_DEBUG
+  winDebug ("%s\n", __FUNCTION__);
+#endif
+
+  pWIC = (WIContextPtr)malloc(sizeof(WIContextRec));
+
+  if (pWIC)
+    {
+      /* Init member */
+      pWIC->nContext = ++s_nContextMax;
+      pWIC->hIMC = ImmCreateContext ();
+      pWIC->dwCompositionStyle = CFS_DEFAULT;
+      pWIC->pszCompositionResult = NULL;
+
+      /* Add to list. */
+      pWIC->pNext = s_pContextList;
+      s_pContextList = pWIC;
+
+#if CYGIME_DEBUG
+      winDebug ("nContext:%d hIMC:%d\n", pWIC->nContext, pWIC->hIMC);
+#endif
+    }
+
+  return pWIC;
+}
+
+static WIContextPtr
+FindContext(int nContext)
+{
+  WIContextPtr pWIC;
+
+#if CYGIME_DEBUG
+  winDebug ("%s %d\n", __FUNCTION__, nContext);
+#endif
+
+  for (pWIC = s_pContextList; pWIC; pWIC = pWIC->pNext)
+    {
+      if (pWIC->nContext == nContext)
+	{
+#if CYGIME_DEBUG
+	  winDebug ("found.\n");
+#endif
+	  return pWIC;
+	}
+    }
+
+#if CYGIME_DEBUG
+  winDebug ("not found.\n");
+#endif
+
+  return NULL;
+}
+
+static void
+DeleteContext(int nContext)
+{
+  WIContextPtr pWIC, pPrev = NULL;
+
+#if CYGIME_DEBUG
+  winDebug ("%s %d\n", __FUNCTION__, nContext);
+#endif
+
+  for (pWIC = s_pContextList; pWIC; pPrev = pWIC, pWIC = pWIC->pNext)
+    {
+      if (pWIC->nContext == nContext)
+	{
+	  if (pPrev)
+	    pPrev->pNext = pWIC->pNext;
+	  else
+	    s_pContextList = pWIC->pNext;
+
+	  ImmDestroyContext (pWIC->hIMC);
+	  free (pWIC);
+	}
+    }
+}
+
+static void
+DeleteAllContext()
+{
+  WIContextPtr pWIC, pNext = NULL;
+
+  for (pWIC = s_pContextList; pWIC; pWIC = pNext)
+    {
+      pNext = pWIC->pNext;
+
+      ImmDestroyContext (pWIC->hIMC);
+      free (pWIC);
+    }
+
+  s_pContextList = NULL;
+}
+
+int
+winHIMCtoContext(DWORD hIMC)
+{
+  WIContextPtr pWIC;
+
+#if CYGIME_DEBUG
+  winDebug ("%s %d\n", __FUNCTION__, hIMC);
+#endif
+
+  for (pWIC = s_pContextList; pWIC; pWIC = pWIC->pNext)
+    {
+      if (pWIC->hIMC == hIMC)
+	{
+#if CYGIME_DEBUG
+	  winDebug ("found.\n");
+#endif
+	  return pWIC->nContext;
+	}
+    }
+
+#if CYGIME_DEBUG
+  winDebug ("not found.\n");
+#endif
+  return 0;
+}
+
+void
+winCommitCompositionResult (int nContext, char *pszStr)
+{
+  WIContextPtr pWIC;
+#if CYGIME_DEBUG
+  winDebug ("%s\n", __FUNCTION__);
+#endif
+
+  if (!(pWIC = FindContext(nContext))) return;
+
+
+  if (pWIC->pszCompositionResult)
+    {
+      free (pWIC->pszCompositionResult);
+    }
+
+  pWIC->pszCompositionResult = strdup (pszStr);
+}
 
 static Bool
 IsRoot(WindowPtr pWin)
@@ -126,6 +286,8 @@ winWinIMEExtensionInit ()
       WinIMEErrorBase = extEntry->errorBase;
       WinIMEEventBase = extEntry->eventBase;
       EventSwapVector[WinIMEEventBase] = (EventSwapPtr) SNotifyEvent;
+
+      DeleteAllContext();
     }
 }
 
@@ -136,6 +298,8 @@ WinIMEResetProc (ExtensionEntry* extEntry)
 #if CYGIME_DEBUG
   winDebug ("%s\n", __FUNCTION__);
 #endif
+
+  DeleteAllContext();
 }
 
 static int
@@ -336,197 +500,90 @@ ProcWinIMESelectInput (register ClientPtr client)
 }
 
 static int
-ProcWinIMEEnable (register ClientPtr client)
+ProcWinIMECreateContext(register ClientPtr client)
 {
-  REQUEST(xWinIMEEnableReq);
-  WindowPtr pWin;
-  winPrivWinPtr	pWinPriv;
-  HIMC hIMC;
-  REQUEST_SIZE_MATCH(xWinIMEEnableReq);
+  xWinIMECreateContextReply rep;
+  WIContextPtr pWIC;
+  register int n;
 
 #if CYGIME_DEBUG
   winDebug ("%s\n", __FUNCTION__);
 #endif
 
-  if (!(pWin = SecurityLookupWindow((Drawable)stuff->window,
-				    client, SecurityReadAccess)))
+  if (!(pWIC = NewContext()))
     {
       return BadValue;
     }
 
-  //FIXME:
-  if (!(pWinPriv = winGetWindowPriv (GetTopLevelParent(pWin))))
+  REQUEST_SIZE_MATCH(xWinIMECreateContextReq);
+  rep.type = X_Reply;
+  rep.length = 0;
+  rep.sequenceNumber = client->sequence;
+  rep.context = pWIC->nContext;
+  if (client->swapped)
+    {
+      swaps(&rep.sequenceNumber, n);
+      swapl(&rep.length, n);
+    }
+  WriteToClient(client, sizeof(xWinIMECreateContextReply), (char *)&rep);
+  return (client->noClientException);
+}
+
+static int
+ProcWinIMESetOpenStatus (register ClientPtr client)
+{
+  REQUEST(xWinIMESetOpenStatusReq);
+  WIContextPtr pWIC;
+
+  REQUEST_SIZE_MATCH(xWinIMESetOpenStatusReq);
+
+#if CYGIME_DEBUG
+  winDebug ("%s\n", __FUNCTION__);
+#endif
+
+  if (!(pWIC = FindContext(stuff->context)))
     {
       return BadValue;
     }
 
-  hIMC = ImmCreateContext ();
-  ImmAssociateContext (pWinPriv->hWnd, hIMC);
+  ImmSetOpenStatus (pWIC->hIMC, stuff->state);
 
   return (client->noClientException);
 }
 
 static int
-ProcWinIMEDisable (register ClientPtr client)
+ProcWinIMESetCompositionWindow (register ClientPtr client)
 {
-  REQUEST(xWinIMEDisableReq);
-  WindowPtr pWin;
-  winPrivWinPtr	pWinPriv;
-  HIMC hIMC;
-  REQUEST_SIZE_MATCH(xWinIMEDisableReq);
+  REQUEST(xWinIMESetCompositionWindowReq);
+  WIContextPtr pWIC;
+  COMPOSITIONFORM cf;
+  REQUEST_SIZE_MATCH(xWinIMESetCompositionWindowReq);
 
 #if CYGIME_DEBUG
   winDebug ("%s\n", __FUNCTION__);
 #endif
 
-  if (!(pWin = SecurityLookupWindow((Drawable)stuff->window,
-				    client, SecurityReadAccess)))
+  if (!(pWIC = FindContext(stuff->context)))
     {
       return BadValue;
     }
 
-  //FIXME:
-  if (!(pWinPriv = winGetWindowPriv (GetTopLevelParent(pWin))))
-    {
-      return BadValue;
-    }
+  pWIC->dwCompositionStyle = stuff->style;
+  pWIC->ptCompositionPos.x = stuff->ix;
+  pWIC->ptCompositionPos.y = stuff->iy;
+  pWIC->rcCompositionArea.left = stuff->ix;
+  pWIC->rcCompositionArea.top = stuff->iy;
+  pWIC->rcCompositionArea.right = stuff->ix + stuff->iw;
+  pWIC->rcCompositionArea.bottom = stuff->iy + stuff->ih;
 
-  hIMC = ImmAssociateContext (pWinPriv->hWnd, (HIMC) NULL);
-  ImmDestroyContext (hIMC);
-
-  return (client->noClientException);
-}
-
-static int
-ProcWinIMEOpen (register ClientPtr client)
-{
-  REQUEST(xWinIMEOpenReq);
-  WindowPtr pWin;
-  winPrivWinPtr	pWinPriv;
-  HIMC hIMC;
-
-  REQUEST_SIZE_MATCH(xWinIMEOpenReq);
-
-#if CYGIME_DEBUG
-  winDebug ("%s\n", __FUNCTION__);
-#endif
-
-  if (!(pWin = SecurityLookupWindow((Drawable)stuff->window,
-				    client, SecurityReadAccess)))
-    {
-      return BadValue;
-    }
-
-  //FIXME:
-  if (!(pWinPriv = winGetWindowPriv (GetTopLevelParent(pWin))))
-    {
-      return BadValue;
-    }
-
-  hIMC = ImmGetContext (pWinPriv->hWnd);
-
-  ImmSetOpenStatus (hIMC, TRUE);
-
-  return (client->noClientException);
-}
-
-static int
-ProcWinIMEClose (register ClientPtr client)
-{
-  REQUEST(xWinIMECloseReq);
-  WindowPtr pWin;
-  winPrivWinPtr	pWinPriv;
-  HIMC hIMC;
-
-  REQUEST_SIZE_MATCH(xWinIMECloseReq);
-
-#if CYGIME_DEBUG
-  winDebug ("%s\n", __FUNCTION__);
-#endif
-
-  if (!(pWin = SecurityLookupWindow((Drawable)stuff->window,
-				    client, SecurityReadAccess)))
-    {
-      return BadValue;
-    }
-
-  //FIXME:
-  if (!(pWinPriv = winGetWindowPriv (GetTopLevelParent(pWin))))
-    {
-      return BadValue;
-    }
-
-  hIMC = ImmGetContext (pWinPriv->hWnd);
-
-  ImmSetOpenStatus (hIMC, FALSE);
-
-  return (client->noClientException);
-}
-
-static int
-ProcWinIMESetCompositionPoint (register ClientPtr client)
-{
-  REQUEST(xWinIMESetCompositionPointReq);
-  WindowPtr pWin;
-  winPrivWinPtr	pWinPriv;
-  REQUEST_SIZE_MATCH(xWinIMESetCompositionPointReq);
-
-#if CYGIME_DEBUG
-  winDebug ("%s\n", __FUNCTION__);
-#endif
-
-  if (!(pWin = SecurityLookupWindow((Drawable)stuff->window,
-				    client, SecurityReadAccess)))
-    {
-      return BadValue;
-    }
-
-  //FIXME:
-  pWinPriv = winGetWindowPriv (GetTopLevelParent(pWin));
-
-  if (pWinPriv == NULL)
-    {
-      return BadValue;
-    }
-
-  pWinPriv->dwCompositionStyle = CFS_POINT;
-  pWinPriv->ptCompositionPos.x = stuff->ix;
-  pWinPriv->ptCompositionPos.y = stuff->iy;
-
-  return (client->noClientException);
-}
-
-static int
-ProcWinIMESetCompositionRect (register ClientPtr client)
-{
-  REQUEST(xWinIMESetCompositionRectReq);
-  WindowPtr pWin;
-  winPrivWinPtr	pWinPriv;
-  REQUEST_SIZE_MATCH(xWinIMESetCompositionRectReq);
-
-#if CYGIME_DEBUG
-  winDebug ("%s\n", __FUNCTION__);
-#endif
-
-  if (!(pWin = SecurityLookupWindow((Drawable)stuff->window,
-				    client, SecurityReadAccess)))
-    {
-      return BadValue;
-    }
-
-  //FIXME: DO I USE TOP LEVEL WINDOW?
-  pWinPriv = winGetWindowPriv (GetTopLevelParent(pWin));
-
-  if (pWinPriv == NULL)
-    {
-      return BadValue;
-    }
-
-  pWinPriv->dwCompositionStyle = CFS_RECT;
-  pWinPriv->rcCompositionArea.left = stuff->ix;
-  pWinPriv->rcCompositionArea.top = stuff->iy;
-  pWinPriv->rcCompositionArea.right = stuff->ix + stuff->iw;
-  pWinPriv->rcCompositionArea.bottom = stuff->iy + stuff->ih;
+  cf.dwStyle = pWIC->dwCompositionStyle;
+  cf.ptCurrentPos.x = pWIC->ptCompositionPos.x;
+  cf.ptCurrentPos.y = pWIC->ptCompositionPos.y;
+  cf.rcArea.left = pWIC->rcCompositionArea.left;
+  cf.rcArea.top = pWIC->rcCompositionArea.top;
+  cf.rcArea.right = pWIC->rcCompositionArea.right;
+  cf.rcArea.bottom = pWIC->rcCompositionArea.bottom;
+  ImmSetCompositionWindow(pWIC->hIMC, &cf);
 
   return (client->noClientException);
 }
@@ -535,57 +592,149 @@ static int
 ProcWinIMEGetCompositionString (register ClientPtr client)
 {
   REQUEST(xWinIMEGetCompositionStringReq);
+  WIContextPtr pWIC;
   int len;
   xWinIMEGetCompositionStringReply rep;
-  WindowPtr pWin;
-  winPrivWinPtr	pWinPriv;
 
 #if CYGIME_DEBUG
-  winDebug ("%s %d(%d) %d\n", __FUNCTION__,
-	    sizeof(xWinIMEGetCompositionStringReq) >> 2,
-	    sizeof(xWinIMEGetCompositionStringReq),
-	    client->req_len);
+  winDebug ("%s %d\n", __FUNCTION__, stuff->context);
 #endif
 
   REQUEST_SIZE_MATCH(xWinIMEGetCompositionStringReq);
 
-  if (!(pWin = SecurityLookupWindow((Drawable)stuff->window,
-				    client, SecurityReadAccess)))
+  if ((pWIC = FindContext(stuff->context)))
     {
-      return BadValue;
-    }
-
-  //FIXME: Need to create window for each x window?
-  pWinPriv = winGetWindowPriv (GetTopLevelParent(pWin));
-
-  if (pWinPriv == NULL)
-    {
-      return BadValue;
-    }
-
-  if (pWinPriv->pszCompositionResult)
-    {
-      len = strlen(pWinPriv->pszCompositionResult);
-      rep.type = X_Reply;
-      rep.length = (len + 3) >> 2;
-      rep.sequenceNumber = client->sequence;
-      rep.strLength = len;
-      WriteReplyToClient(client, sizeof(xWinIMEGetCompositionStringReply), &rep);
-      (void)WriteToClient(client, len, pWinPriv->pszCompositionResult);
+      if (pWIC->pszCompositionResult)
+	{
+	  len = strlen(pWIC->pszCompositionResult);
+	  rep.type = X_Reply;
+	  rep.length = (len + 3) >> 2;
+	  rep.sequenceNumber = client->sequence;
+	  rep.strLength = len;
+	  WriteReplyToClient(client, sizeof(xWinIMEGetCompositionStringReply), &rep);
+	  (void)WriteToClient(client, len, pWIC->pszCompositionResult);
+	}
+      else
+	{
+#if CYGIME_DEBUG
+	  winDebug ("no composition result.\n");
+#endif
+	  return BadValue;
+	}
     }
   else
     {
+#if CYGIME_DEBUG
+      winDebug ("context is not found.\n");
+#endif
       return BadValue;
     }
 
   return (client->noClientException);
 }
+
+#if 0
+static int
+ProcWinIMEFilterKeyEvent (register ClientPtr client)
+{
+  REQUEST(xWinIMEFilterKeyEventReq);
+  WindowPtr pWin;
+  winPrivWinPtr	pWinPriv;
+  MSG msg;
+
+  REQUEST_SIZE_MATCH(xWinIMEFilterKeyEventReq);
+
+#if CYGIME_DEBUG
+  winDebug ("%s\n", __FUNCTION__);
+#endif
+
+#if CYGIME_DEBUG
+  //winDebug ("0x%02x 0x%02x\n", stuff->keycode, MapVirtualKey (stuff->keycode, 1));
+  //winDebug ("0x%02x 0x%02x\n", stuff->keycode - MIN_KEYCODE, MapVirtualKey (stuff->keycode - MIN_KEYCODE, 1));
+#endif
+#if 0
+  msg.hwnd = GetActiveWindow ();
+  msg.lParam = MapVirtualKey (stuff->keycode - MIN_KEYCODE, 1);
+  msg.wParam = 1
+    |  (stuff->keycode - MIN_KEYCODE << 16); //scancode
+  msg.time = GetTickCount ();
+
+  switch (stuff->type)
+    {
+    case KeyPress:
+      msg.message = WM_KEYDOWN;
+      msg.wParam |= 0;
+      break;
+    case KeyRelease:
+      msg.message = WM_KEYUP;
+      msg.wParam |= (1 << 30) | (1 << 31) ;
+      break;
+    default:
+      return BadValue;
+    }
+  if (g_fIME)
+    {
+      WORD pszKey[2];
+      BYTE aKeyState[256];
+      HKL hkl = GetKeyboardLayout(0);
+      int nRet;
+
+      memset(aKeyState, 0, 256*sizeof(BYTE));
+
+      nRet = ToAsciiEx(msg.lParam, stuff->keycode - MIN_KEYCODE, aKeyState, pszKey, 0, hkl);
+      winDebug ("ToUnicodeEx return %d %c%c\n", nRet, pszKey[0], pszKey[1]);
+      //TranslateMessage(&msg);
+    }
+#endif
+
+  return (client->noClientException);
+}
+#endif
+
+static HWND s_hAssociatedWnd = NULL;
+
+static int
+ProcWinIMESetFocus (register ClientPtr client)
+{
+  REQUEST(xWinIMESetFocusReq);
+  WIContextPtr pWIC;
+
+  REQUEST_SIZE_MATCH(xWinIMESetFocusReq);
+
+#if CYGIME_DEBUG
+  winDebug ("%s %d\n", __FUNCTION__, stuff->context);
+#endif
+
+  if (!(pWIC = FindContext(stuff->context)))
+    {
+      return BadValue;
+    }
+
+  if (stuff->focus)
+    {
+      if (s_hAssociatedWnd)
+	{
+	  ImmAssociateContext (s_hAssociatedWnd, (HIMC)0);
+	}
+
+      s_hAssociatedWnd = GetActiveWindow ();
+
+      ImmAssociateContext (s_hAssociatedWnd, pWIC->hIMC);
+    }
+  else
+    {
+      /* do nothing */
+    }
+
+  return (client->noClientException);
+}
+
 /*
  * deliver the event
  */
 
 void
-winWinIMESendEvent (int type, unsigned int mask, int kind, int arg, Window window)
+winWinIMESendEvent (int type, unsigned int mask, int kind, int arg, int context)
 {
   WinIMEEventPtr	*pHead, pEvent;
   ClientPtr		client;
@@ -601,7 +750,7 @@ winWinIMESendEvent (int type, unsigned int mask, int kind, int arg, Window windo
     {
       client = pEvent->client;
 #if CYGIME_DEBUG
-      ErrorF ("winWindowsWMSendEvent - x%08x\n", (int) client);
+      ErrorF ("winWinIMESendEvent - x%08x\n", (int) client);
 #endif
       if ((pEvent->mask & mask) == 0
 	  || client == serverClient || client->clientGone)
@@ -609,245 +758,17 @@ winWinIMESendEvent (int type, unsigned int mask, int kind, int arg, Window windo
 	  continue;
 	}
 #if CYGIME_DEBUG 
-      ErrorF ("winWindowsWMSendEvent - send\n");
+      ErrorF ("winWinIMESendEvent - send\n");
 #endif
       se.type = type + WinIMEEventBase;
       se.kind = kind;
-      se.window = window;
+      se.context = context;
       se.arg = arg;
       se.sequenceNumber = client->sequence;
       se.time = currentTime.milliseconds;
       WriteEventsToClient (client, 1, (xEvent *) &se);
     }
 }
-
-#if 0
-
-/* Safe to call from any thread. */
-unsigned int
-WindowsWMSelectedEvents (void)
-{
-#if CYGIME_DEBUG
-  winDebug ("%s\n", __FUNCTION__);
-#endif
-  return eventMask;
-}
-
-
-/* frame functions */
-
-static int
-ProcWindowsWMFrameGetRect (register ClientPtr client)
-{
-  xWindowsWMFrameGetRectReply rep;
-  BoxRec ir;
-  RECT rcNew;
-  REQUEST(xWindowsWMFrameGetRectReq);
-
-#if CYGIME_DEBUG
-  winDebug ("%s\n", __FUNCTION__);
-#endif
-
-#if CYGIME_DEBUG
-  ErrorF ("ProcWindowsWMFrameGetRect %d %d\n",
-	  (sizeof(xWindowsWMFrameGetRectReq) >> 2), (int) client->req_len);
-#endif
-  
-  REQUEST_SIZE_MATCH(xWindowsWMFrameGetRectReq);
-  rep.type = X_Reply;
-  rep.length = 0;
-  rep.sequenceNumber = client->sequence;
-
-  ir = make_box (stuff->ix, stuff->iy, stuff->iw, stuff->ih);
-
-  if (stuff->frame_rect != 0)
-    {
-      ErrorF ("ProcWindowsWMFrameGetRect - stuff->frame_rect != 0\n");
-      return BadValue;
-    }
-
-  /* Store the origin, height, and width in a rectangle structure */
-  SetRect (&rcNew, stuff->ix, stuff->iy,
-	   stuff->ix + stuff->iw, stuff->iy + stuff->ih);
-    
-#if CYGIME_DEBUG
-  ErrorF ("ProcWindowsWMFrameGetRect - %d %d %d %d\n",
-	  stuff->ix, stuff->iy, stuff->ix + stuff->iw, stuff->iy + stuff->ih);
-#endif
-
-  /*
-   * Calculate the required size of the Windows window rectangle,
-   * given the size of the Windows window client area.
-   */
-  AdjustWindowRectEx (&rcNew, stuff->frame_style, FALSE, stuff->frame_style_ex);
-  rep.x = rcNew.left;
-  rep.y = rcNew.top;
-  rep.w = rcNew.right - rcNew.left;
-  rep.h = rcNew.bottom - rcNew.top;
-#if CYGIME_DEBUG
-  ErrorF ("ProcWindowsWMFrameGetRect - %d %d %d %d\n",
-	  rep.x, rep.y, rep.w, rep.h);
-#endif
-
-  WriteToClient(client, sizeof(xWindowsWMFrameGetRectReply), (char *)&rep);
-  return (client->noClientException);
-}
-
-
-static int
-ProcWindowsWMFrameDraw (register ClientPtr client)
-{
-  REQUEST(xWindowsWMFrameDrawReq);
-  WindowPtr pWin;
-  win32RootlessWindowPtr pRLWinPriv;
-  RECT rcNew;
-  int nCmdShow;
-  RegionRec newShape;
-  ScreenPtr pScreen;
-
-  REQUEST_SIZE_MATCH (xWindowsWMFrameDrawReq);
-
-#if CYGIME_DEBUG
-  ErrorF ("ProcWindowsWMFrameDraw\n");
-#endif
-  if (!(pWin = SecurityLookupWindow((Drawable)stuff->window,
-				    client, SecurityReadAccess)))
-    {
-      return BadValue;
-    }
-#if CYGIME_DEBUG
-  ErrorF ("ProcWindowsWMFrameDraw - Window found\n");
-#endif
-
-  pRLWinPriv = (win32RootlessWindowPtr) RootlessFrameForWindow (pWin, TRUE);
-  if (pRLWinPriv == 0) return BadWindow;
-
-#if CYGIME_DEBUG
-  ErrorF ("ProcWindowsWMFrameDraw - HWND 0x%08x 0x%08x 0x%08x\n",
-	  (int) pRLWinPriv->hWnd, (int) stuff->frame_style,
-	  (int) stuff->frame_style_ex);
-  ErrorF ("ProcWindowsWMFrameDraw - %d %d %d %d\n",
-	  stuff->ix, stuff->iy, stuff->iw, stuff->ih);
-#endif
-
-  /* Store the origin, height, and width in a rectangle structure */
-  SetRect (&rcNew, stuff->ix, stuff->iy,
-	   stuff->ix + stuff->iw, stuff->iy + stuff->ih);
-
-  /*
-   * Calculate the required size of the Windows window rectangle,
-   * given the size of the Windows window client area.
-   */
-  AdjustWindowRectEx (&rcNew, stuff->frame_style, FALSE, stuff->frame_style_ex);
-  
-  /* Set the window extended style flags */
-  if (!SetWindowLongPtr (pRLWinPriv->hWnd, GWL_EXSTYLE, stuff->frame_style_ex))
-    {
-      return BadValue;
-    }
-
-  /* Set the window standard style flags */
-  if (!SetWindowLongPtr (pRLWinPriv->hWnd, GWL_STYLE, stuff->frame_style))
-    {
-      return BadValue;
-    }
-
-  /* Flush the window style */
-  if (!SetWindowPos (pRLWinPriv->hWnd, NULL,
-		     rcNew.left, rcNew.top,
-		     rcNew.right - rcNew.left, rcNew.bottom - rcNew.top,
-		     SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOACTIVATE))
-    {
-      return BadValue;
-    }
-  if (!IsWindowVisible(pRLWinPriv->hWnd))
-    nCmdShow = SW_HIDE;
-  else 
-    nCmdShow = SW_SHOWNA;
-
-  ShowWindow (pRLWinPriv->hWnd, nCmdShow);
-
-  winMWExtWMUpdateIcon (pWin->drawable.id);
-
-  if (wBoundingShape(pWin) != NULL)
-    {
-      pScreen = pWin->drawable.pScreen;
-      /* wBoundingShape is relative to *inner* origin of window.
-	 Translate by borderWidth to get the outside-relative position. */
-      
-      REGION_NULL(pScreen, &newShape);
-      REGION_COPY(pScreen, &newShape, wBoundingShape(pWin));
-      REGION_TRANSLATE(pScreen, &newShape, pWin->borderWidth, pWin->borderWidth);
-      winMWExtWMReshapeFrame (pRLWinPriv, &newShape);
-      REGION_UNINIT(pScreen, &newShape);
-    }
-#if CYGIME_DEBUG
-  ErrorF ("ProcWindowsWMFrameDraw - done\n");
-#endif
-
-  return (client->noClientException);
-}
-
-static int
-ProcWindowsWMFrameSetTitle(
-			   register ClientPtr client
-			   )
-{
-  unsigned int title_length, title_max;
-  unsigned char *title_bytes;
-  REQUEST(xWindowsWMFrameSetTitleReq);
-  WindowPtr pWin;
-  win32RootlessWindowPtr pRLWinPriv;
-
-#if CYGIME_DEBUG
-  ErrorF ("ProcWindowsWMFrameSetTitle\n");
-#endif
-
-  REQUEST_AT_LEAST_SIZE(xWindowsWMFrameSetTitleReq);
-
-  if (!(pWin = SecurityLookupWindow((Drawable)stuff->window,
-				    client, SecurityReadAccess)))
-    {
-      return BadValue;
-    }
-#if CYGIME_DEBUG
-  ErrorF ("ProcWindowsWMFrameSetTitle - Window found\n");
-#endif
-
-  title_length = stuff->title_length;
-  title_max = (stuff->length << 2) - sizeof(xWindowsWMFrameSetTitleReq);
-
-  if (title_max < title_length)
-    return BadValue;
-
-#if CYGIME_DEBUG
-  ErrorF ("ProcWindowsWMFrameSetTitle - length is valid\n");
-#endif
-
-  title_bytes = malloc (title_length+1);
-  strncpy (title_bytes, (unsigned char *) &stuff[1], title_length);
-  title_bytes[title_length] = '\0';
-
-  pRLWinPriv = (win32RootlessWindowPtr) RootlessFrameForWindow (pWin, FALSE);
-
-  if (pRLWinPriv == 0)
-    {
-      free (title_bytes);
-      return BadWindow;
-    }
-    
-  /* Flush the window style */
-  SetWindowText (pRLWinPriv->hWnd, title_bytes);
-
-  free (title_bytes);
-
-#if CYGIME_DEBUG
-  ErrorF ("ProcWindowsWMFrameSetTitle - done\n");
-#endif
-
-  return (client->noClientException);
-}
-#endif
 
 /* dispatch */
 
@@ -863,23 +784,19 @@ ProcWinIMEDispatch (register ClientPtr client)
   switch (stuff->data)
     {
     case X_WinIMEQueryVersion:
-      return ProcWinIMEQueryVersion(client);
+      return ProcWinIMEQueryVersion (client);
     case X_WinIMESelectInput:
-      return ProcWinIMESelectInput(client);
-    case X_WinIMEEnable:
-      return ProcWinIMEEnable(client);
-    case X_WinIMEDisable:
-      return ProcWinIMEDisable(client);
-    case X_WinIMEOpen:
-      return ProcWinIMEOpen(client);
-    case X_WinIMEClose:
-      return ProcWinIMEClose(client);
-    case X_WinIMESetCompositionPoint:
-      return ProcWinIMESetCompositionPoint(client);
-    case X_WinIMESetCompositionRect:
-      return ProcWinIMESetCompositionRect(client);
+      return ProcWinIMESelectInput (client);
+    case X_WinIMECreateContext:
+      return ProcWinIMECreateContext (client);
+    case X_WinIMESetOpenStatus:
+      return ProcWinIMESetOpenStatus (client);
+    case X_WinIMESetCompositionWindow:
+      return ProcWinIMESetCompositionWindow (client);
     case X_WinIMEGetCompositionString:
-      return ProcWinIMEGetCompositionString(client);
+      return ProcWinIMEGetCompositionString (client);
+    case X_WinIMESetFocus:
+      return ProcWinIMESetFocus (client);
     default:
       return BadRequest;
     }
@@ -895,7 +812,7 @@ SNotifyEvent (xWinIMENotifyEvent *from, xWinIMENotifyEvent *to)
   to->type = from->type;
   to->kind = from->kind;
   cpswaps (from->sequenceNumber, to->sequenceNumber);
-  cpswapl (from->window, to->window);
+  cpswapl (from->context, to->context);
   cpswapl (from->time, to->time);
   cpswapl (from->arg, to->arg);
 }
