@@ -50,7 +50,7 @@
 #include "winic.h"
 
 #define DEFAULT_IMNAME "XIME"
-#define DEFAULT_LOCALE "ja_JP,zh_TW"
+#define DEFAULT_LOCALE "ja_JP,ko_KR,zh_CN,zh_HK,zh_SG,zh_TW"
 #define STRING_BUFFER_SIZE 1024
 #define WIN_CONNECT_RETRIES			40
 #define WIN_CONNECT_DELAY			4

@@ -1,3 +1,5 @@
+? ime-20050606-2040.diff
+? extras/Mesa/mms-config
 ? lib/winime
 ? programs/Xserver/hw/xwin/IMdkit
 ? programs/Xserver/hw/xwin/winic.c
@@ -7,11 +9,11 @@
 Index: config/cf/X11.tmpl
 ===================================================================
 RCS file: /cvs/xorg/xc/config/cf/X11.tmpl,v
-retrieving revision 1.38
-diff -u -r1.38 X11.tmpl
---- config/cf/X11.tmpl	3 Dec 2004 03:33:25 -0000	1.38
-+++ config/cf/X11.tmpl	16 Jan 2005 09:19:43 -0000
-@@ -708,6 +708,10 @@
+retrieving revision 1.49
+diff -u -r1.49 X11.tmpl
+--- config/cf/X11.tmpl	28 Apr 2005 22:55:46 -0000	1.49
++++ config/cf/X11.tmpl	6 Jun 2005 11:40:12 -0000
+@@ -717,6 +717,10 @@
  #define BuildWindowsWMLibrary	NO
  #endif
  
@@ -22,16 +24,16 @@ diff -u -r1.38 X11.tmpl
  #ifndef BuildMiscDocs
  #define BuildMiscDocs		NO
  #endif
-@@ -2364,6 +2368,30 @@
+@@ -2345,6 +2349,30 @@
  #define ProfileLibWindowsWM	NO
  #endif
  
 +#if BuildWinIMELibrary
 +#ifndef SharedLibWinIME
-+#define SharedLibWinIME	HasSharedLibraries
++#define SharedLibWinIME		HasSharedLibraries
 +#endif
 +#ifndef NormalLibWinIME
-+#define NormalLibWinIME	(!SharedLibWinIME || ForceNormalLib)
++#define NormalLibWinIME		(!SharedLibWinIME || ForceNormalLib)
 +#endif
 +#ifndef DebugLibWinIME
 +#define DebugLibWinIME		NO
@@ -53,7 +55,7 @@ diff -u -r1.38 X11.tmpl
  #if BuildGLULibrary
  #ifndef SharedLibGlu
  #define SharedLibGlu		HasSharedLibraries
-@@ -2766,6 +2794,16 @@
+@@ -2747,6 +2775,16 @@
  ProjectUnsharedLibReferences(WINDOWSWM,WindowsWM,$(WINDOWSWMLIBSRC),XBuildLibDir)
  #endif
  
@@ -76,8 +78,27 @@ RCS file: /cvs/xorg/xc/config/cf/cygwin.cf,v
 retrieving revision 1.17
 diff -u -r1.17 cygwin.cf
 --- config/cf/cygwin.cf	15 Nov 2004 15:06:52 -0000	1.17
-+++ config/cf/cygwin.cf	16 Jan 2005 09:19:43 -0000
-@@ -314,6 +314,10 @@
++++ config/cf/cygwin.cf	6 Jun 2005 11:40:12 -0000
+@@ -67,7 +67,7 @@
+ #endif
+ 
+ #if !CrossCompiling
+-# define HasGcc2		YES
++/*# define HasGcc2		YES*/
+ #endif /* !CrossCompiling */
+ #define HasGcc2ForCplusplus	YES
+ #define GccUsesGas		YES
+@@ -306,6 +306,9 @@
+ #ifndef BuildXWinXF86Config
+ # define BuildXWinXF86Config	NO
+ #endif
++#ifndef BuildXWinImServer
++# define BuildXWinImServer     YES
++#endif
+ 
+ /* XWin specific build flags - 1st order dependency */
+ #if BuildXWinMultiWindowExtWM && !defined(BuildWindowsWMLibrary)
+@@ -314,6 +317,10 @@
  # define BuildWindowsWMLibrary	NO
  #endif /* BuildXWinMultiWindowExtWM && BuildWindowsWMLibrary */
  
@@ -88,34 +109,39 @@ diff -u -r1.17 cygwin.cf
  /* XWin Server specific defines */
  #if BuildXWinClipboard
  # define XWinClipboardDefines	-DXWIN_CLIPBOARD
-@@ -356,6 +360,11 @@
+@@ -356,6 +363,16 @@
  #else
  # define XWinXF86ConfigDefines 
  #endif /* BuildXWinXF86Config */
 +#if BuildWinIMELibrary
 +# define XWinWinIMEDefines	-DXWIN_WINIME
 +#else
-+# define XWinWinIMEDefines 
++# define XWinWinIMEDefines
 +#endif /* BuildXWinIMELibrary */
++#if BuildXWinImServer
++# define XWinImServerDefines	-DXWIN_IMSERVER
++#else
++# define XWinImServerDefines
++#endif /* BuildXWinImServer */
  
  /*
   * XFree86Server is defined for the w32api headers, which protects some
-@@ -371,6 +380,7 @@
+@@ -371,6 +388,7 @@
  				XWinUpdateStatsDefines \
  				XWinClipboardDefines XWinMultiWindowDefines \
  				XWinMultiWindowExtWMDefines \
-+				XWinWinIMEDefines \
++				XWinWinIMEDefines XWinImServerDefines \
  				-DDDXBEFORERESET
  #define ServerOSDefines		-DDDXTIME -DDDXOSINIT \
  				-DDDXOSVERRORF -DDDXOSFATALERROR
 Index: config/cf/cygwin.rules
 ===================================================================
 RCS file: /cvs/xorg/xc/config/cf/cygwin.rules,v
-retrieving revision 1.9
-diff -u -r1.9 cygwin.rules
---- config/cf/cygwin.rules	2 Sep 2004 01:10:28 -0000	1.9
-+++ config/cf/cygwin.rules	16 Jan 2005 09:19:43 -0000
-@@ -31,6 +31,7 @@
+retrieving revision 1.10
+diff -u -r1.10 cygwin.rules
+--- config/cf/cygwin.rules	19 May 2005 18:53:42 -0000	1.10
++++ config/cf/cygwin.rules	6 Jun 2005 11:40:12 -0000
+@@ -29,6 +29,7 @@
  #define SharedLibDpsTk		YES
  #define SharedLibGlu		YES
  #define SharedLibWindowsWM	NO
@@ -126,11 +152,11 @@ diff -u -r1.9 cygwin.rules
 Index: config/cf/mingw.cf
 ===================================================================
 RCS file: /cvs/xorg/xc/config/cf/mingw.cf,v
-retrieving revision 1.4
-diff -u -r1.4 mingw.cf
---- config/cf/mingw.cf	10 Jan 2005 10:48:46 -0000	1.4
-+++ config/cf/mingw.cf	16 Jan 2005 09:19:44 -0000
-@@ -301,6 +301,10 @@
+retrieving revision 1.8
+diff -u -r1.8 mingw.cf
+--- config/cf/mingw.cf	1 Jun 2005 15:48:48 -0000	1.8
++++ config/cf/mingw.cf	6 Jun 2005 11:40:13 -0000
+@@ -379,6 +379,10 @@
  # define BuildWindowsWMLibrary	NO
  #endif /* BuildXWinMultiWindowExtWM && BuildWindowsWMLibrary */
  
@@ -140,14 +166,14 @@ diff -u -r1.4 mingw.cf
 +
  #if (BuildXWinClipboard || BuildXWinMultiWindow || BuildXWinMultiWindowExtWM) && !defined(BuildX11Lib)
  #  define BuildX11Lib YES
- #  define NormalLibX11 YES
+ #endif
 Index: lib/Imakefile
 ===================================================================
 RCS file: /cvs/xorg/xc/lib/Imakefile,v
 retrieving revision 1.11
 diff -u -r1.11 Imakefile
 --- lib/Imakefile	29 Sep 2004 12:40:28 -0000	1.11
-+++ lib/Imakefile	16 Jan 2005 09:20:02 -0000
++++ lib/Imakefile	6 Jun 2005 11:40:30 -0000
 @@ -161,6 +161,10 @@
  WINDOWSLIBDIR = windows
  #endif
@@ -164,28 +190,28 @@ diff -u -r1.11 Imakefile
  	     $(XFTLIBDIR) $(XVMCLIBDIR) $(RANDRLIBDIR) $(XTRAPLIBDIR) \
  	     $(XRESLIBDIR) $(XCURSORLIBDIR) $(APPLELIBDIR) $(DMXLIBDIR) \
 -	     $(WINDOWSLIBDIR) $(XEVIELIBDIR) $(XFIXESLIBDIR) $(DAMAGELIBDIR) $(COMPOSITELIBDIR)
-+	     $(WINDOWSLIBDIR) $(XEVIELIBDIR) $(XFIXESLIBDIR) $(DAMAGELIBDIR) \
-+	     $(COMPOSITELIBDIR) $(WINIMELIBDIR)
++	     $(WINDOWSLIBDIR) $(XEVIELIBDIR) $(XFIXESLIBDIR) $(DAMAGELIBDIR) $(COMPOSITELIBDIR) \
++	     $(WINIMELIBDIR)
  
  SUBDIRS = $(BERKDIR) xtrans $(LINTSUBDIRS) $(FONTSUBDIR) $(FONTENCSUBDIR) \
            $(FONTCACHELIBDIR)
 Index: programs/Xserver/Imakefile
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/Imakefile,v
-retrieving revision 1.26
-diff -u -r1.26 Imakefile
---- programs/Xserver/Imakefile	9 Jan 2005 20:45:14 -0000	1.26
-+++ programs/Xserver/Imakefile	16 Jan 2005 09:20:16 -0000
-@@ -1029,13 +1029,29 @@
+retrieving revision 1.31
+diff -u -r1.31 Imakefile
+--- programs/Xserver/Imakefile	22 Apr 2005 20:49:49 -0000	1.31
++++ programs/Xserver/Imakefile	6 Jun 2005 11:40:38 -0000
+@@ -1005,13 +1005,31 @@
  #else
  XWINOPENGLLIB = 
  #endif
 +#if BuildWinIMELibrary
 +XWINIMMLIB = -limm32
 +#else
-+XWINIMMLIB = 
++XWINIMMLIB =
 +#endif
-+#if BuildWinIMELibrary
++#if BuildXWinImServer
 +XWINIMDKITDIR = $(XWINDDXDIR)/IMdkit
 +XWINIMDKITLIB = $(XWINDDXDIR)/IMdkit/LibraryTargetName(Ximd)
 +XWINWINIMELIB = -lWinIME -lXext
@@ -200,68 +226,77 @@ diff -u -r1.26 Imakefile
 -	   $(DEPDIRS) $(XWINPARSERDIR) $(ROOTLESSDIR) $(MIDAMAGEDIR)
 +	   $(DEPDIRS) $(XWINPARSERDIR) $(ROOTLESSDIR) $(MIDAMAGEDIR) \
 +	   $(XWINIMDKITDIR)
++
  XWINOBJS = $(XWINDDXDIR)/stubs.o $(XWINDDXDIR)/XWin.res
  XWINLIBS = PreFbLibs $(XWINLIB) FbPostFbLibs $(XWINLIB) $(XWINLAYERLIB) \
 -           $(SHADOW) $(XWINPARSERLIB) $(ROOTLESSLIB) $(OS)
 +           $(SHADOW) $(XWINPARSERLIB) $(ROOTLESSLIB) $(OS) $(XWINIMMLIB) \
-+           $(XWINIMDKITLIB)
++	   $(XWINIMDKITLIB)
++
  #if BuildXWinMultiWindow || BuildXWinClipboard
  XWINX11  = $(XONLYLIB)	   
  # if defined(Win32Architecture)
-@@ -1050,16 +1066,19 @@
+@@ -1026,12 +1044,15 @@
  #else
  XWINW32  = -lgdi32
  #endif
 -XWINSYSLIBS = $(FONTLIBS) $(LDPRELIBS) $(XWINX11) $(SYSLIBS) $(XWINW32)
 +XWINSYSLIBS = $(FONTLIBS) $(LDPRELIBS) $(XWINWINIMELIB) $(XWINX11) \
 +	      $(SYSLIBS) $(XWINW32) $(XWINIMDKITLIB)
++
  
  EXTRA_LDOPTIONS = -e _mainCRTStartup
  
  #if HasParallelMake
 -MakeMutex($(XWINDIRS) $(XWINOBJS) $(XWINLIB) $(XWINLIBS) $(XWINSYSLIBS))
 +MakeMutex($(XWINDIRS) $(XWINOBJS) $(XWINLIB) $(XWINLIBS) $(XWINSYSLIBS) \
-+          $(XWINIMDKITLIB))
++          $(XWINIMDKITLIB)))
  #endif
  
  #if ForceServerRemake
--$(XWINOBJS) $(XWINLIB) $(XWINLIBS) $(XWINSYSLIBS):: $(XWINDIRS)
-+$(XWINOBJS) $(XWINLIB) $(XWINLIBS) $(XWINSYSLIBS):: \
-+ $(XWINDIRS)
- 	@if [ -f $@ ]; then touch $@ >/dev/null 2>&1 || exit 0; fi
- #endif
- 
 Index: programs/Xserver/hw/xwin/Imakefile
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/Imakefile,v
 retrieving revision 1.8
 diff -u -r1.8 Imakefile
 --- programs/Xserver/hw/xwin/Imakefile	6 Jan 2005 16:02:47 -0000	1.8
-+++ programs/Xserver/hw/xwin/Imakefile	16 Jan 2005 09:20:34 -0000
-@@ -1,6 +1,7 @@
- XCOMM $XFree86: xc/programs/Xserver/hw/xwin/Imakefile,v 1.18 2003/10/02 13:30:09 eich Exp $
++++ programs/Xserver/hw/xwin/Imakefile	6 Jun 2005 11:40:56 -0000
+@@ -2,6 +2,10 @@
  
  #include <Server.tmpl>
-+#define IHaveSubdirs
  
++#if BuildXWinImServer
++# define IHaveSubdirs
++#endif
++
  EXTRADEFINES = 
  
-@@ -35,6 +36,10 @@
+ #if HasShm
+@@ -12,7 +16,7 @@
+ MMAPDEF = -DHAS_MMAP
+ #endif
+ 
+-#if defined(HasDevWindow) && HasDevWindows
++#if defined(HasDevWindows) && HasDevWindows
+ EXTRADEFINES += -DHAS_DEVWINDOWS
+ #endif
+ 
+@@ -35,6 +39,10 @@
  RC_PROJECT_DEFINES = -DPROJECT_NAME="\\\"$(PROJECT_NAME)\\\""
  EXTRA_DEFINES = $(PROJECT_DEFINES)
  
-+#if BuildWinIMELibrary
++#if BuildXWinImServer
 +SUBDIRS = IMdkit
 +#endif
 +
  #if BuildXWinClipboard
  SRCS_CLIPBOARD = \
  	winclipboardinit.c \
-@@ -67,6 +72,13 @@
+@@ -67,6 +75,13 @@
  	winwindowswm.c
  #endif
  
-+#if BuildWinIMELibrary
++#if BuildXWinImServer
 +SRCS_WINIMEWM = \
 +	winime.c \
 +	winic.c \
@@ -271,7 +306,7 @@ diff -u -r1.8 Imakefile
  #if BuildXWinNativeGDI
  SRCS_NATIVEGDI = \
  	winclip.c \
-@@ -137,6 +149,7 @@
+@@ -137,6 +152,7 @@
  	$(SRCS_GLX_WINDOWS) \
  	$(SRCS_MULTIWINDOW) \
  	$(SRCS_MULTIWINDOWEXTWM) \
@@ -279,11 +314,11 @@ diff -u -r1.8 Imakefile
  	$(SRCS_NATIVEGDI) \
  	$(SRCS_PRIMARYFB) \
  	$(SRCS_RANDR) \
-@@ -187,6 +200,13 @@
+@@ -187,6 +203,13 @@
  	winwindowswm.o
  #endif
  
-+#if BuildWinIMELibrary
++#if BuildXWinImServer
 +OBJS_WINIME = \
 +	winime.o \
 +	winic.o \
@@ -293,7 +328,7 @@ diff -u -r1.8 Imakefile
  #if BuildXWinNativeGDI
  OBJS_NATIVEGDI = \
  	winclip.o \
-@@ -257,6 +277,7 @@
+@@ -257,6 +280,7 @@
  	$(OBJS_GLX_WINDOWS) \
  	$(OBJS_MULTIWINDOW) \
  	$(OBJS_MULTIWINDOWEXTWM) \
@@ -301,7 +336,7 @@ diff -u -r1.8 Imakefile
  	$(OBJS_NATIVEGDI) \
  	$(OBJS_PRIMARYFB) \
  	$(OBJS_RANDR) \
-@@ -270,7 +291,7 @@
+@@ -270,7 +294,7 @@
  	   -I$(SERVERSRC)/include -I$(SERVERSRC)/os  \
             -I$(EXTINCSRC) -I$(XINCLUDESRC) \
  	   -I$(SERVERSRC)/render -I$(SERVERSRC)/randr \
@@ -310,7 +345,7 @@ diff -u -r1.8 Imakefile
  
  #ifdef XVendorString
  VENDORSTRING = XVendorString
-@@ -308,3 +329,6 @@
+@@ -308,3 +332,6 @@
  InstallManPage(XWinrc,$(MANDIR))
  
  DependTarget()
@@ -320,11 +355,11 @@ diff -u -r1.8 Imakefile
 Index: programs/Xserver/hw/xwin/win.h
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/win.h,v
-retrieving revision 1.12
-diff -u -r1.12 win.h
---- programs/Xserver/hw/xwin/win.h	8 Dec 2004 15:48:15 -0000	1.12
-+++ programs/Xserver/hw/xwin/win.h	16 Jan 2005 09:20:34 -0000
-@@ -1310,6 +1310,9 @@
+retrieving revision 1.15
+diff -u -r1.15 win.h
+--- programs/Xserver/hw/xwin/win.h	25 May 2005 12:14:29 -0000	1.15
++++ programs/Xserver/hw/xwin/win.h	6 Jun 2005 11:40:56 -0000
+@@ -1327,6 +1327,9 @@
  winWindowProc (HWND hWnd, UINT message, 
  	       WPARAM wParam, LPARAM lParam);
  
@@ -334,11 +369,12 @@ diff -u -r1.12 win.h
  
  #ifdef XWIN_MULTIWINDOWEXTWM
  /*
-@@ -1441,6 +1444,34 @@
+@@ -1458,6 +1461,40 @@
  Bool
  winInitCursor (ScreenPtr pScreen);
  
-+#ifdef XWIN_WINIME
++
++#ifdef XWIN_IMSERVER
 +/*
 + * winime.c
 + */
@@ -358,8 +394,13 @@ diff -u -r1.12 win.h
 +Bool
 +winHIMCCompositionDraw(DWORD hIMC);
 +
++LRESULT
++winIMEMessageHandler (HWND hwnd, UINT message,
++		      WPARAM wParam, LPARAM lParam);
++
++
 +/*
-+ * winime.c
++ * winimserver.c
 + */
 +
 +Bool
@@ -372,10 +413,10 @@ diff -u -r1.12 win.h
 Index: programs/Xserver/hw/xwin/winblock.c
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winblock.c,v
-retrieving revision 1.5
-diff -u -r1.5 winblock.c
---- programs/Xserver/hw/xwin/winblock.c	8 Jan 2005 13:01:03 -0000	1.5
-+++ programs/Xserver/hw/xwin/winblock.c	16 Jan 2005 09:20:34 -0000
+retrieving revision 1.7
+diff -u -r1.7 winblock.c
+--- programs/Xserver/hw/xwin/winblock.c	3 Jun 2005 08:12:22 -0000	1.7
++++ programs/Xserver/hw/xwin/winblock.c	6 Jun 2005 11:40:56 -0000
 @@ -39,6 +39,7 @@
  extern HWND			g_hDlgDepthChange;
  extern HWND			g_hDlgExit;
@@ -396,12 +437,12 @@ diff -u -r1.5 winblock.c
 Index: programs/Xserver/hw/xwin/winconfig.c
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winconfig.c,v
-retrieving revision 1.8
-diff -u -r1.8 winconfig.c
---- programs/Xserver/hw/xwin/winconfig.c	8 Dec 2004 15:48:15 -0000	1.8
-+++ programs/Xserver/hw/xwin/winconfig.c	16 Jan 2005 09:20:35 -0000
+retrieving revision 1.11
+diff -u -r1.11 winconfig.c
+--- programs/Xserver/hw/xwin/winconfig.c	20 Apr 2005 12:25:42 -0000	1.11
++++ programs/Xserver/hw/xwin/winconfig.c	6 Jun 2005 11:40:56 -0000
 @@ -39,6 +39,16 @@
- #include "XKBsrv.h"
+ #include <X11/extensions/XKBsrv.h>
  #endif
  
 +
@@ -409,7 +450,7 @@ diff -u -r1.8 winconfig.c
 + * References to external symbols
 + */
 +
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +extern Bool			g_fIME;
 +#endif
 +
@@ -417,13 +458,13 @@ diff -u -r1.8 winconfig.c
  #ifdef XWIN_XF86CONFIG
  #ifndef CONFIGPATH
  #define CONFIGPATH  "%A," "%R," \
-@@ -333,7 +343,11 @@
+@@ -296,7 +306,11 @@
  	   Same might apply for chinese, korean and other symbol languages
  	   too */
          layoutNum = (layoutNum & 0xffff);
 -	if (keyboardType == 7)
 +	if ((keyboardType == 7)
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +	    && !g_fIME
 +#endif
 +	    )
@@ -436,12 +477,12 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winglobals.c,v
 retrieving revision 1.5
 diff -u -r1.5 winglobals.c
 --- programs/Xserver/hw/xwin/winglobals.c	22 Nov 2004 14:12:33 -0000	1.5
-+++ programs/Xserver/hw/xwin/winglobals.c	16 Jan 2005 09:20:35 -0000
++++ programs/Xserver/hw/xwin/winglobals.c	6 Jun 2005 11:40:56 -0000
 @@ -114,6 +114,15 @@
  #endif
  
  
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +/*
 + * IME variables
 + */
@@ -456,20 +497,11 @@ diff -u -r1.5 winglobals.c
 Index: programs/Xserver/hw/xwin/winmultiwindowwindow.c
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winmultiwindowwindow.c,v
-retrieving revision 1.9
-diff -u -r1.9 winmultiwindowwindow.c
---- programs/Xserver/hw/xwin/winmultiwindowwindow.c	12 Jan 2005 16:10:00 -0000	1.9
-+++ programs/Xserver/hw/xwin/winmultiwindowwindow.c	16 Jan 2005 09:20:35 -0000
-@@ -605,7 +605,7 @@
-   HMODULE		hInstance;
-   int			iReturn;
-   char			pszClass[512];
--  
-+
- #if CYGMULTIWINDOW_DEBUG
-   ErrorF ("winDestroyWindowsWindow\n");
- #endif
-@@ -631,7 +631,7 @@
+retrieving revision 1.12
+diff -u -r1.12 winmultiwindowwindow.c
+--- programs/Xserver/hw/xwin/winmultiwindowwindow.c	7 Mar 2005 22:26:59 -0000	1.12
++++ programs/Xserver/hw/xwin/winmultiwindowwindow.c	6 Jun 2005 11:40:56 -0000
+@@ -656,7 +656,7 @@
      {
        if (g_hDlgDepthChange == 0 || !IsDialogMessage (g_hDlgDepthChange, &msg))
  	{
@@ -481,15 +513,18 @@ diff -u -r1.9 winmultiwindowwindow.c
 Index: programs/Xserver/hw/xwin/winmultiwindowwndproc.c
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winmultiwindowwndproc.c,v
-retrieving revision 1.4
-diff -u -r1.4 winmultiwindowwndproc.c
---- programs/Xserver/hw/xwin/winmultiwindowwndproc.c	15 Sep 2004 17:58:50 -0000	1.4
-+++ programs/Xserver/hw/xwin/winmultiwindowwndproc.c	16 Jan 2005 09:20:36 -0000
-@@ -38,6 +38,12 @@
- #if CYGDEBUG
- #include "winmessages.h"
- #endif
-+#ifdef XWIN_WINIME
+retrieving revision 1.13
+diff -u -r1.13 winmultiwindowwndproc.c
+--- programs/Xserver/hw/xwin/winmultiwindowwndproc.c	3 Jun 2005 08:12:22 -0000	1.13
++++ programs/Xserver/hw/xwin/winmultiwindowwndproc.c	6 Jun 2005 11:40:57 -0000
+@@ -36,6 +36,15 @@
+ #include "winmultiwindowclass.h"
+ #include "winprefs.h"
+ #include "winmsg.h"
++#if CYGDEBUG
++#include "winmessages.h"
++#endif
++#ifdef XWIN_IMSERVER
 +#define _WINIME_SERVER_
 +#include "winime.h"
 +#include "winimestr.h"
@@ -498,7 +533,7 @@ diff -u -r1.4 winmultiwindowwndproc.c
  
  /*
   * External global variables
-@@ -269,6 +275,39 @@
+@@ -284,6 +293,39 @@
  
  
  /*
@@ -538,11 +573,11 @@ diff -u -r1.4 winmultiwindowwndproc.c
   * winTopLevelWindowProc - Window procedure for all top-level Windows windows.
   */
  
-@@ -380,6 +419,11 @@
+@@ -385,6 +427,11 @@
  	       WIN_WID_PROP,
  	       (HANDLE)winGetWindowID (((LPCREATESTRUCT) lParam)->lpCreateParams));
  
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +      /* Disable IME by default */
 +      ImmAssociateContext (hwnd, (HIMC) NULL);
 +#endif
@@ -550,11 +585,11 @@ diff -u -r1.4 winmultiwindowwndproc.c
        /*
         * Make X windows' Z orders sync with Windows windows because
         * there can be AlwaysOnTop windows overlapped on the window
-@@ -680,6 +724,13 @@
-       ErrorF ("winTopLevelWindowProc - WM_*KEYDOWN\n");
- #endif
+@@ -664,6 +711,13 @@
+     case WM_SYSKEYDOWN:
+     case WM_KEYDOWN:
  
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +      /*
 +       * Ignore IME process key
 +       */
@@ -564,11 +599,11 @@ diff -u -r1.4 winmultiwindowwndproc.c
        /*
         * Don't pass Alt-F4 key combo to root window,
         * let Windows translate to WM_CLOSE and close this top-level window.
-@@ -744,6 +795,13 @@
-       ErrorF ("winTopLevelWindowProc - WM_*KEYUP\n");
- #endif
+@@ -724,6 +778,13 @@
+     case WM_KEYUP:
  
-+#ifdef XWIN_WINIME
+ 
++#ifdef XWIN_IMSERVER
 +      /*
 +       * Ignore IME process key
 +       */
@@ -578,11 +613,11 @@ diff -u -r1.4 winmultiwindowwndproc.c
        /* Pass the message to the root window */
        SendMessage (hwndScreen, message, wParam, lParam);
        return 0;
-@@ -1051,6 +1109,16 @@
+@@ -1019,6 +1080,16 @@
  	}
        break;
  
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +    case WM_IME_NOTIFY:
 +    case WM_IME_STARTCOMPOSITION:
 +    case WM_IME_COMPOSITION:
@@ -601,12 +636,12 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winprocarg.c,v
 retrieving revision 1.10
 diff -u -r1.10 winprocarg.c
 --- programs/Xserver/hw/xwin/winprocarg.c	15 Dec 2004 12:22:39 -0000	1.10
-+++ programs/Xserver/hw/xwin/winprocarg.c	16 Jan 2005 09:20:36 -0000
++++ programs/Xserver/hw/xwin/winprocarg.c	6 Jun 2005 11:41:00 -0000
 @@ -54,6 +54,9 @@
  extern Bool			g_fNoHelpMessageBox;                     
  extern Bool			g_fSoftwareCursor;
  extern Bool			g_fSilentDupError;
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +extern Bool			g_fIME;
 +#endif
  
@@ -616,7 +651,7 @@ diff -u -r1.10 winprocarg.c
        return 1;
      }
  
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +  /*
 +   * Look for the '-ime' argument
 +   */
@@ -633,15 +668,15 @@ diff -u -r1.10 winprocarg.c
 Index: programs/Xserver/hw/xwin/winscrinit.c
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winscrinit.c,v
-retrieving revision 1.8
-diff -u -r1.8 winscrinit.c
---- programs/Xserver/hw/xwin/winscrinit.c	15 Nov 2004 15:06:48 -0000	1.8
-+++ programs/Xserver/hw/xwin/winscrinit.c	16 Jan 2005 09:20:36 -0000
+retrieving revision 1.9
+diff -u -r1.9 winscrinit.c
+--- programs/Xserver/hw/xwin/winscrinit.c	12 Feb 2005 14:47:17 -0000	1.9
++++ programs/Xserver/hw/xwin/winscrinit.c	6 Jun 2005 11:41:00 -0000
 @@ -75,6 +75,9 @@
  extern miPointerScreenFuncRec	g_winPointerCursorFuncs;
  extern int			g_iScreenPrivateIndex;
  extern Bool                     g_fSoftwareCursor;
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +extern Bool			g_fIME;
 +#endif
  
@@ -651,7 +686,7 @@ diff -u -r1.8 winscrinit.c
      }
  #endif
  
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +  if (g_fIME)
 +    {
 +      winWinIMEExtensionInit ();
@@ -674,7 +709,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winwakeup.c,v
 retrieving revision 1.4
 diff -u -r1.4 winwakeup.c
 --- programs/Xserver/hw/xwin/winwakeup.c	15 Nov 2004 15:06:48 -0000	1.4
-+++ programs/Xserver/hw/xwin/winwakeup.c	16 Jan 2005 09:20:36 -0000
++++ programs/Xserver/hw/xwin/winwakeup.c	6 Jun 2005 11:41:00 -0000
 @@ -63,7 +63,7 @@
  	  && (g_hDlgAbout == 0
  	      || !IsDialogMessage (g_hDlgAbout, &msg)))
@@ -687,15 +722,18 @@ diff -u -r1.4 winwakeup.c
 Index: programs/Xserver/hw/xwin/winwin32rootlesswndproc.c
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winwin32rootlesswndproc.c,v
-retrieving revision 1.5
-diff -u -r1.5 winwin32rootlesswndproc.c
---- programs/Xserver/hw/xwin/winwin32rootlesswndproc.c	4 Nov 2004 11:52:22 -0000	1.5
-+++ programs/Xserver/hw/xwin/winwin32rootlesswndproc.c	16 Jan 2005 09:20:37 -0000
-@@ -40,6 +40,12 @@
- #if CYGDEBUG
- #include "winmessages.h"
- #endif
-+#ifdef XWIN_WINIME
+retrieving revision 1.8
+diff -u -r1.8 winwin32rootlesswndproc.c
+--- programs/Xserver/hw/xwin/winwin32rootlesswndproc.c	20 Apr 2005 12:25:42 -0000	1.8
++++ programs/Xserver/hw/xwin/winwin32rootlesswndproc.c	6 Jun 2005 11:41:00 -0000
+@@ -38,6 +38,15 @@
+ #include <X11/Xatom.h>
+ #include "winmultiwindowclass.h"
+ #include "winmsg.h"
++#if CYGDEBUG
++#include "winmessages.h"
++#endif
++#ifdef XWIN_IMSERVER
 +#define _WINIME_SERVER_
 +#include "winime.h"
 +#include "winimestr.h"
@@ -704,23 +742,23 @@ diff -u -r1.5 winwin32rootlesswndproc.c
  
  
  /*
-@@ -469,6 +475,11 @@
+@@ -456,6 +465,11 @@
        SetProp (hwnd,
  	       WIN_WINDOW_PROP,
  	       (HANDLE)((LPCREATESTRUCT) lParam)->lpCreateParams);
 +
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +      /* Disable IME by default */
 +      ImmAssociateContext (hwnd, (HIMC) NULL);
 +#endif
        return 0;
  
      case WM_CLOSE:
-@@ -748,6 +759,13 @@
+@@ -735,6 +749,13 @@
        winDebug ("winMWExtWMWindowProc - WM_*KEYDOWN\n");
  #endif
  
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +      /*
 +       * Ignore IME process key
 +       */
@@ -730,11 +768,11 @@ diff -u -r1.5 winwin32rootlesswndproc.c
        /*
         * Don't pass Alt-F4 key combo to root window,
         * let Windows translate to WM_CLOSE and close this top-level window.
-@@ -776,6 +794,13 @@
+@@ -763,6 +784,13 @@
        winDebug ("winMWExtWMWindowProc - WM_*KEYUP\n");
  #endif
  
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +      /*
 +       * Ignore IME process key
 +       */
@@ -744,11 +782,11 @@ diff -u -r1.5 winwin32rootlesswndproc.c
        /* Pass the message to the root window */
        SendMessage (hwndScreen, message, wParam, lParam);
        return 0;
-@@ -1309,6 +1334,16 @@
+@@ -1313,6 +1341,16 @@
        ErrorF ("winMWExtWMWindowProc - WM_UNMANAGE\n");
        break;
  
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +    case WM_IME_NOTIFY:
 +    case WM_IME_STARTCOMPOSITION:
 +    case WM_IME_COMPOSITION:
@@ -767,7 +805,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winwindowswm.c,v
 retrieving revision 1.2
 diff -u -r1.2 winwindowswm.c
 --- programs/Xserver/hw/xwin/winwindowswm.c	21 Jun 2004 13:19:32 -0000	1.2
-+++ programs/Xserver/hw/xwin/winwindowswm.c	16 Jan 2005 09:20:37 -0000
++++ programs/Xserver/hw/xwin/winwindowswm.c	6 Jun 2005 11:41:00 -0000
 @@ -240,7 +240,7 @@
         */
        if (!pHead)
@@ -780,19 +818,19 @@ diff -u -r1.2 winwindowswm.c
 Index: programs/Xserver/hw/xwin/winwndproc.c
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winwndproc.c,v
-retrieving revision 1.9
-diff -u -r1.9 winwndproc.c
---- programs/Xserver/hw/xwin/winwndproc.c	10 Jan 2005 13:13:08 -0000	1.9
-+++ programs/Xserver/hw/xwin/winwndproc.c	16 Jan 2005 09:20:37 -0000
-@@ -58,6 +58,7 @@
+retrieving revision 1.10
+diff -u -r1.10 winwndproc.c
+--- programs/Xserver/hw/xwin/winwndproc.c	31 Jan 2005 10:43:37 -0000	1.10
++++ programs/Xserver/hw/xwin/winwndproc.c	6 Jun 2005 11:41:01 -0000
+@@ -56,6 +56,7 @@
  extern HWND			g_hwndKeyboardFocus;
  extern Bool			g_fSoftwareCursor;
  extern DWORD			g_dwCurrentThreadID;
 +extern Bool			g_fIME;
  
+ 
  /*
-  * Called by winWakeupHandler
-@@ -1257,3 +1258,29 @@
+@@ -1247,3 +1248,29 @@
  
    return DefWindowProc (hwnd, message, wParam, lParam);
  }
@@ -814,7 +852,7 @@ diff -u -r1.9 winwndproc.c
 +	       (HIBYTE (HIWORD (lpMsg->lParam)) & 0x80) >> 7);
 +    }
 +#endif
-+#ifdef XWIN_WINIME
++#ifdef XWIN_IMSERVER
 +  if (g_fIME)
 +    {
 +      TranslateMessage(lpMsg);
