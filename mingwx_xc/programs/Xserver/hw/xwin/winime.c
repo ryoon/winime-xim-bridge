@@ -89,6 +89,8 @@ typedef struct _WIContext {
   RECT			rcCompositionArea;
   char			*pszComposition;
   char			*pszCompositionResult;
+  char			*pAttr;
+  int			nAttr;
 } WIContextRec;
 
 static int s_nContextMax = 0;
@@ -114,6 +116,8 @@ NewContext()
       pWIC->dwCompositionStyle = CFS_DEFAULT;
       pWIC->pszComposition = NULL;
       pWIC->pszCompositionResult = NULL;
+      pWIC->pAttr = NULL;
+      pWIC->nAttr = 0;
 
       /* Add to list. */
       pWIC->pNext = s_pContextList;
@@ -247,7 +251,7 @@ winHIMCCompositionDraw(DWORD hIMC)
 }
 
 void
-winCommitCompositionResult (int nContext, int nIndex, char *pszStr)
+winCommitCompositionResult (int nContext, int nIndex, void *pData, int nLen)
 {
   WIContextPtr pWIC;
 #if CYGIME_DEBUG
@@ -263,7 +267,7 @@ winCommitCompositionResult (int nContext, int nIndex, char *pszStr)
 	{
 	  free (pWIC->pszComposition);
 	}
-      pWIC->pszComposition = strdup (pszStr);
+      pWIC->pszComposition = (char*)pData;
       break;
 
     case GCS_RESULTSTR:
@@ -271,11 +275,21 @@ winCommitCompositionResult (int nContext, int nIndex, char *pszStr)
 	{
 	  free (pWIC->pszCompositionResult);
 	}
-      pWIC->pszCompositionResult = strdup (pszStr);
+      pWIC->pszCompositionResult = (char*)pData;
       break;
 
     case GCS_CURSORPOS:
-      pWIC->nCursor = *(int*)pszStr;
+      pWIC->nCursor = *(int*)pData;
+      break;
+
+    case GCS_COMPATTR:
+      if (pWIC->pAttr)
+	{
+	  free (pWIC->pAttr);
+	}
+      pWIC->pAttr = (char*)pData;
+      pWIC->nAttr = nLen;
+      break;
 
     default:
       break;
@@ -686,6 +700,27 @@ ProcWinIMEGetCompositionString (register ClientPtr client)
 		rep.strLength = len;
 		WriteReplyToClient(client, sizeof(xWinIMEGetCompositionStringReply), &rep);
 		(void)WriteToClient(client, len, pWIC->pszCompositionResult);
+	      }
+	    else
+	      {
+#if CYGIME_DEBUG
+		winDebug ("no composition result.\n");
+#endif
+		return BadValue;
+	      }
+	  }
+	  break;
+	case WinIMECMPCompAttr:
+	  {
+	    if (pWIC->pszComposition)
+	      {
+		len = pWIC->nAttr;
+		rep.type = X_Reply;
+		rep.length = (len + 3) >> 2;
+		rep.sequenceNumber = client->sequence;
+		rep.strLength = len;
+		WriteReplyToClient(client, sizeof(xWinIMEGetCompositionStringReply), &rep);
+		(void)WriteToClient(client, len, pWIC->pAttr);
 	      }
 	    else
 	      {

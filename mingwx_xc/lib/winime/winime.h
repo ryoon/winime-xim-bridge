@@ -82,6 +82,13 @@
 #define WinIMECSPoint			2
 #define WinIMECSForcePosition		32
 
+#define WinIMEAttrInput			0
+#define WinIMEAttrTargetConverted	1
+#define WinIMEAttrConverted		2
+#define WinIMEAttrTargetNotconverted	3
+#define WinIMEAttrInputError		4
+#define WinIMEAttrFixedconverted	5
+
 #ifndef _WINIME_SERVER_
 
 typedef struct {

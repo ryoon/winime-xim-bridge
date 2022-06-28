@@ -293,7 +293,7 @@ XWinIMESetCompositionWindow (Display* dpy, int context,
   return True;
 }
 
-Bool
+int
 XWinIMEGetCompositionString (Display *dpy, int context,
 			     int index,
 			     int count,
@@ -320,13 +320,12 @@ XWinIMEGetCompositionString (Display *dpy, int context,
       UnlockDisplay(dpy);
       SyncHandle();
       TRACE("GetCompositionString... return False");
-      return False;
+      return -1;
     }
 
   if ((str = (char *) Xmalloc(rep.strLength+1)))
     {
       _XReadPad(dpy, str, (long)rep.strLength);
-      str[rep.strLength] = '\0';
     }
   else
     {
@@ -334,17 +333,16 @@ XWinIMEGetCompositionString (Display *dpy, int context,
       str = (char *) NULL;
     }
 
-  strncpy(str_return, str, count);
-  fprintf(stderr, "%s(%d/%d) %s(%d/%d)", str, rep.strLength, strlen(str),
-	  str_return, count, strlen(str_return));
-  str[count - 1] = '\0';
+  memcpy(str_return, str, rep.strLength);
+  //fprintf(stderr, "%s(%d/%d) %s(%d/%d)", str, rep.strLength, strlen(str),
+  //str_return, count, strlen(str_return));
   Xfree(str);
 
   UnlockDisplay(dpy);
   SyncHandle();
   TRACE("GetCompositionString... return True");
 
-  return True;
+  return rep.strLength;
 }
 
 Bool

@@ -52,7 +52,7 @@ typedef struct {
     Cursor	cursor;		/* cursor */
 } StatusAttributes;
 
-typedef struct _IC {
+typedef struct _IMIC {
   CARD16	id;		/* ic id */
   INT32	input_style;	/* input style */
   Window	client_win;	/* client window */
@@ -65,21 +65,21 @@ typedef struct _IC {
   int		length;
   int		caret;
   IMProtocol call_data;
-  struct _IC	*next;
-} IC;
+  struct _IMIC	*next;
+} IMIC;
 
-IC*
-FindIC(CARD16 icid);
+IMIC*
+FindIMIC(CARD16 icid);
 
-IC*
-FindICbyContext(int context);
-
-void
-CreateIC(IMChangeICStruct *call_data);
+IMIC*
+FindIMICbyContext(int context);
 
 void
-SetIC(IMChangeICStruct *call_data);
+CreateIMIC(IMChangeICStruct *call_data);
 
 void
-GetIC(IMChangeICStruct *call_data);
+SetIMIC(IMChangeICStruct *call_data);
+
+void
+GetIMIC(IMChangeICStruct *call_data);
 

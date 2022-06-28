@@ -33,25 +33,25 @@ Author:
 #include <stdio.h>
 #include "IMdkit/IMdkit.h"
 #include "IMdkit/Xi18n.h"
-#include "winIC.h"
+#include "IC.h"
 
 extern Display *dpy;
-static IC *ic_list = (IC *)NULL;
-static IC *free_list = (IC *)NULL;
+static IMIC *ic_list = (IMIC *)NULL;
+static IMIC *free_list = (IMIC *)NULL;
 
-static IC
-*NewIC()
+static IMIC
+*NewIMIC()
 {
     static CARD16 icid = 0;
-    IC *rec;
+    IMIC *rec;
 
     if (free_list != NULL) {
 	rec = free_list;
 	free_list = free_list->next;
     } else {
-	rec = (IC *)malloc(sizeof(IC));
+	rec = (IMIC *)malloc(sizeof(IMIC));
     }
-    memset(rec, 0, sizeof(IC));
+    memset(rec, 0, sizeof(IMIC));
     rec->id = ++icid;
 
     XWinIMECreateContext (dpy, &rec->context);
@@ -81,8 +81,8 @@ TopLevelWindow(Window win)
   return w;
 }
 static void
-StoreIC(rec, call_data)
-IC *rec;
+StoreIMIC(rec, call_data)
+IMIC *rec;
 IMChangeICStruct *call_data;
 {
     XICAttribute *ic_attr = call_data->ic_attr;
@@ -91,7 +91,7 @@ IMChangeICStruct *call_data;
     register int i;
 
     for (i = 0; i < (int)call_data->ic_attr_num; i++, ic_attr++) {
-      printf ("StoreIC.ic: %s\n", pre_attr->name);
+      printf ("StoreIMIC.ic: %s\n", pre_attr->name);
       if (!strcmp(XNInputStyle, ic_attr->name))
 	{
 	  printf ("XNInputStyle");
@@ -146,14 +146,14 @@ IMChangeICStruct *call_data;
 	rec->focus_win = *(Window*)ic_attr->value;
     }
     for (i = 0; i < (int)call_data->preedit_attr_num; i++, pre_attr++) {
-      printf ("StoreIC.preedit: %s\n", pre_attr->name);
+      printf ("StoreIMIC.preedit: %s\n", pre_attr->name);
 	if (!strcmp(XNArea, pre_attr->name))
 	  {
 	    int x, y, w, h;
 	    Window child;
 
 	    rec->pre_attr.area = *(XRectangle*)pre_attr->value;
-	    printf ("StoreIC: XArea(%d, %d, %d, %d)\n",
+	    printf ("StoreIMIC: XArea(%d, %d, %d, %d)\n",
 		    rec->pre_attr.area.x, rec->pre_attr.area.y,
 		    rec->pre_attr.area.width, rec->pre_attr.area.height);
 	    x = rec->pre_attr.area.x;
@@ -192,7 +192,7 @@ IMChangeICStruct *call_data;
 	    Window child;
 
 	    rec->pre_attr.spot_location = *(XPoint*)pre_attr->value;
-	    printf ("StoreIC: XNSpotLocation(%d,%d)\n",
+	    printf ("StoreIMIC: XNSpotLocation(%d,%d)\n",
 		    rec->pre_attr.spot_location.x, rec->pre_attr.spot_location.y);
 
 	    x = rec->pre_attr.spot_location.x;
@@ -245,12 +245,12 @@ IMChangeICStruct *call_data;
 	  rec->pre_attr.cursor = *(Cursor*)pre_attr->value;
     }
     for (i = 0; i < (int)call_data->status_attr_num; i++, sts_attr++) {
-      printf ("StoreIC.status: %s", sts_attr->name);
+      printf ("StoreIMIC.status: %s", sts_attr->name);
       if (!strcmp(XNArea, sts_attr->name))
 	{
 	  rec->sts_attr.area = *(XRectangle*)sts_attr->value;
 #if 0
-	  printf ("StoreIC: XArea(%d, %d, %d, %d)\n",
+	  printf ("StoreIMIC: XArea(%d, %d, %d, %d)\n",
 		  rec->sts_attr.area.x, rec->sts_attr.area.y,
 		  rec->sts_attr.area.width, rec->sts_attr.area.height);
 	  XWinIMESetCompositionRect (dpy, rec->context,
@@ -292,11 +292,11 @@ IMChangeICStruct *call_data;
     rec->call_data.any.connect_id = call_data->connect_id;
 }
 
-IC*
-FindIC(icid)
+IMIC*
+FindIMIC(icid)
 CARD16 icid;
 {
-    IC *rec = ic_list;
+    IMIC *rec = ic_list;
 
     while (rec != NULL) {
 	if (rec->id == icid)
@@ -307,10 +307,10 @@ CARD16 icid;
     return NULL;
 }
 
-IC*
-FindICbyContext(int context)
+IMIC*
+FindIMICbyContext(int context)
 {
-    IC *rec = ic_list;
+    IMIC *rec = ic_list;
 
     while (rec != NULL) {
 	if (rec->context == context)
@@ -322,44 +322,44 @@ FindICbyContext(int context)
 }
 
 void
-CreateIC(call_data)
+CreateIMIC(call_data)
 IMChangeICStruct *call_data;
 {
-    IC *rec;
+    IMIC *rec;
 
-    rec = NewIC();
+    rec = NewIMIC();
     if (rec == NULL)
       return;
 
     memset (&rec->call_data, 0, sizeof(IMProtocol));
 
-    StoreIC(rec, call_data);
+    StoreIMIC(rec, call_data);
     call_data->icid = rec->id;
 
     return;
 }
 
 void
-SetIC(call_data)
+SetIMIC(call_data)
 IMChangeICStruct *call_data;
 {
-    IC *rec = FindIC(call_data->icid);
+    IMIC *rec = FindIMIC(call_data->icid);
 
     if (rec == NULL)
       return;
-    StoreIC(rec, call_data);
+    StoreIMIC(rec, call_data);
     return;
 }
 
 void
-GetIC(call_data)
+GetIMIC(call_data)
 IMChangeICStruct *call_data;
 {
     XICAttribute *ic_attr = call_data->ic_attr;
     XICAttribute *pre_attr = call_data->preedit_attr;
     XICAttribute *sts_attr = call_data->status_attr;
     register int i;
-    IC *rec = FindIC(call_data->icid);
+    IMIC *rec = FindIMIC(call_data->icid);
 
     if (rec == NULL)
       return;

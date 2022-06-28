@@ -1,3 +1,32 @@
+/*
+ *Copyright (C) 2004-2005 Kensuke Matsuzaki. All Rights Reserved.
+ *
+ *Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ *"Software"), to deal in the Software without restriction, including
+ *without limitation the rights to use, copy, modify, merge, publish,
+ *distribute, sublicense, and/or sell copies of the Software, and to
+ *permit persons to whom the Software is furnished to do so, subject to
+ *the following conditions:
+ *
+ *The above copyright notice and this permission notice shall be
+ *included in all copies or substantial portions of the Software.
+ *
+ *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *NONINFRINGEMENT. IN NO EVENT SHALL THE KENSUKE MATSUZAKI BE LIABLE FOR
+ *ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+ *CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *Except as contained in this notice, the name of the Kensuke Matsuzaki
+ *shall not be used in advertising or otherwise to promote the sale, use
+ *or other dealings in this Software without prior written authorization
+ *from the Kensuke Matsuzaki Project.
+ *
+ * Authors:	Kensuke Matsuzaki <zakki@peppermint.jp>
+ */
 /******************************************************************
 
          Copyright 1993, 1994 by Hewlett-Packard Company
@@ -24,7 +53,6 @@ PERFORMANCE OF THIS SOFTWARE.
 Author:
     Hidetoshi Tajima	Hewlett-Packard Company.
 			(tajima@kobe.hp.com)
-    Kensuke Matsuzaki   (zakki@peppermint.jp)
 ******************************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -35,10 +63,23 @@ Author:
 #include <IMdkit.h>
 #include <Xi18n.h>
 #include <X11/extensions/winime.h>
-#include "winIC.h"
+
+/* Windows headers */
+#define NONAMELESSUNION
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+/* Fixups to prevent collisions between Windows and X headers */
+#define BOOL wBOOL
+#define INT32 wINT32
+#include <windows.h>
+
+#include "IC.h"
 
 #define DEFAULT_IMNAME "XIME"
 #define DEFAULT_LOCALE "ja_JP"
+#define STRING_BUFFER_SIZE 1024
 
 /* flags for debugging */
 Bool use_tcp = False;		/* Using TCP/IP Transport or not */
@@ -65,37 +106,37 @@ static XIMStyle Styles[] = {
 #if 0
 /* Trigger Keys List */
 static XIMTriggerKey Trigger_Keys[] = {
-    {XK_space, ShiftMask, ShiftMask},
-    {0L, 0L, 0L}
+  {XK_space, ShiftMask, ShiftMask},
+  {0L, 0L, 0L}
 };
 
 /* Forward Keys List */
 static XIMTriggerKey Forward_Keys[] = {
-    {XK_Return, 0, 0},
-    {XK_Tab, 0, 0},
-    {0L, 0L, 0L}
+  {XK_Return, 0, 0},
+  {XK_Tab, 0, 0},
+  {0L, 0L, 0L}
 };
 #endif
 
 /* Supported Japanese Encodings */
 static XIMEncoding jaEncodings[] = {
-    "COMPOUND_TEXT",
-    "UTF-8",
-    NULL
+  "COMPOUND_TEXT",
+  "UTF-8",
+  NULL
 };
 
 /* Supported Taiwanese Encodings */
 static XIMEncoding zhEncodings[] = {
-    "COMPOUND_TEXT",
-    "eucTW",
-    NULL
+  "COMPOUND_TEXT",
+  "eucTW",
+  NULL
 };
 
 Bool
 MyGetICValuesHandler(XIMS ims, IMChangeICStruct *call_data)
 {
   printf ("%s\n", __FUNCTION__);
-  GetIC(call_data);
+  GetIMIC(call_data);
   return True;
 }
 
@@ -103,7 +144,7 @@ Bool
 MySetICValuesHandler(XIMS ims, IMChangeICStruct *call_data)
 {
   printf ("%s\n", __FUNCTION__);
-  SetIC (call_data);
+  SetIMIC (call_data);
   return True;
 }
 
@@ -119,7 +160,7 @@ Bool
 MyCreateICHandler(XIMS ims, IMChangeICStruct* call_data)
 {
   printf ("%s\n", __FUNCTION__);
-  CreateIC(call_data);
+  CreateIMIC(call_data);
 
   return True;
 }
@@ -128,29 +169,29 @@ MyCreateICHandler(XIMS ims, IMChangeICStruct* call_data)
 Bool
 IsMatchKeys(XIMS ims, IMForwardEventStruct *call_data, XIMTriggerKey *trigger)
 {
-    char strbuf[STRBUFLEN];
-    KeySym keysym;
-    int i;
-    int modifier;
-    int modifier_mask;
-    XKeyEvent *kev;
-    int key_count;
+  char strbuf[STRBUFLEN];
+  KeySym keysym;
+  int i;
+  int modifier;
+  int modifier_mask;
+  XKeyEvent *kev;
+  int key_count;
 
-    printf ("%s\n", __FUNCTION__);
+  printf ("%s\n", __FUNCTION__);
 
-    kev = (XKeyEvent*)&call_data->event;
-    XLookupString(kev, strbuf, STRBUFLEN, &keysym, NULL);
+  kev = (XKeyEvent*)&call_data->event;
+  XLookupString(kev, strbuf, STRBUFLEN, &keysym, NULL);
 
-    for (i = 0; trigger[i].keysym != 0; i++);
-    key_count = i;
-    for (i = 0; i < key_count; i++) {
-	modifier      = trigger[i].modifier;
-	modifier_mask = trigger[i].modifier_mask;
-	if (((KeySym)trigger[i].keysym == keysym)
-	    && ((kev->state & modifier_mask) == modifier))
-	  return True;
-    }
-    return False;
+  for (i = 0; trigger[i].keysym != 0; i++);
+  key_count = i;
+  for (i = 0; i < key_count; i++) {
+    modifier      = trigger[i].modifier;
+    modifier_mask = trigger[i].modifier_mask;
+    if (((KeySym)trigger[i].keysym == keysym)
+	&& ((kev->state & modifier_mask) == modifier))
+      return True;
+  }
+  return False;
 }
 
 Bool
@@ -205,9 +246,9 @@ MyForwardEventHandler(XIMS ims, IMForwardEventStruct *call_data)
 Bool
 MySetICFocusHandler(XIMS ims, IMChangeFocusStruct *call_data)
 {
-  IC *rec;
+  IMIC *rec;
   printf ("%s\n", __FUNCTION__);
-  rec = FindIC(call_data->icid);
+  rec = FindIMIC(call_data->icid);
 
   XWinIMESetFocus (dpy, rec->context, True);
   return True;
@@ -216,9 +257,9 @@ MySetICFocusHandler(XIMS ims, IMChangeFocusStruct *call_data)
 Bool
 MyUnsetICFocusHandler(XIMS ims, IMChangeFocusStruct *call_data)
 {
-  IC *rec;
+  IMIC *rec;
   printf ("%s\n", __FUNCTION__);
-  rec = FindIC(call_data->icid);
+  rec = FindIMIC(call_data->icid);
 
   XWinIMESetFocus (dpy, rec->context, False);
   return True;
@@ -321,12 +362,9 @@ MyProtoHandler(XIMS ims, IMProtocol *call_data)
 void
 MyXEventHandler(Window im_window, XEvent *event)
 {
-#define COMPOSITION_STRING_BUFFER 1024
-  char composition_string[COMPOSITION_STRING_BUFFER];
   int i;
 
   printf ("%s\n", __FUNCTION__);
-  composition_string[0] = '\0';
 
   switch (event->type) {
   case DestroyNotify:
@@ -345,9 +383,9 @@ MyXEventHandler(Window im_window, XEvent *event)
     if (event->type == ime_event_base + WinIMEControllerNotify)
       {
 	XWinIMENotifyEvent *ime_event = (XWinIMENotifyEvent*)event;
-	IC *rec;
+	IMIC *rec;
 
-	rec = FindICbyContext (ime_event->context);
+	rec = FindIMICbyContext (ime_event->context);
 
 	switch (ime_event->kind){
 	case WinIMEOpenStatus:
@@ -388,14 +426,67 @@ MyXEventHandler(Window im_window, XEvent *event)
 	      {
 	      case WinIMECMPCompStr:
 		{
+		  char composition_string[STRING_BUFFER_SIZE];
 		  int cursor;
-		  if (!XWinIMEGetCompositionString (dpy, ime_event->context,
-						    WinIMECMPCompStr,
-						    COMPOSITION_STRING_BUFFER,
-						    composition_string))
+		  int len;
+		  char composition_attr[STRING_BUFFER_SIZE];
+		  XIMFeedback feedback[STRING_BUFFER_SIZE] = {XIMUnderline};
+		  int attr_len;
+
+		  len = XWinIMEGetCompositionString (dpy, ime_event->context,
+						     WinIMECMPCompStr,
+						     STRING_BUFFER_SIZE,
+						     composition_string);
+		  if (len < 0)
+		    {
+		      printf("XWinIMEGetCompositionString failed.\n");
+		      break;
+		    }
+		  composition_string[len] = '\0';
+
+		  attr_len = XWinIMEGetCompositionString (dpy, ime_event->context,
+							  WinIMECMPCompAttr,
+							  STRING_BUFFER_SIZE,
+							  composition_attr);
+		  if (attr_len < 0)
 		    {
 		      printf("XWinIMEGetCompositionString failed.\n");
 		    }
+
+		  printf("attribute \n");
+		  for (i = 0; i < attr_len; i++)
+		    {
+		      switch (composition_attr[i])
+			{
+			case WinIMEAttrInput:
+			  printf ("[input]");
+			  feedback[i] = XIMUnderline;
+			  break;
+			case WinIMEAttrTargetConverted:
+			  printf ("[target converted]");
+			  feedback[i] = XIMUnderline | XIMReverse;
+			  break;
+			case WinIMEAttrConverted:
+			  printf ("[converted]");
+			  feedback[i] = XIMPrimary;
+			  break;
+			case WinIMEAttrTargetNotconverted:
+			  printf ("[target not converted]");
+			  feedback[i] = XIMReverse;
+			  break;
+			case WinIMEAttrInputError:
+			  printf ("[error]");
+			  feedback[i] = XIMUnderline;
+			  break;
+			case WinIMEAttrFixedconverted:
+			  printf ("[fixed converted]");
+			  feedback[i] = XIMUnderline;
+			  break;
+			default:
+			  printf ("[%d]", (int)composition_attr[i]);
+			}
+		    }
+		  printf ("\n");
 
 		  if (!XWinIMEGetCursorPosition (dpy, ime_event->context,
 						 &cursor))
@@ -409,7 +500,12 @@ MyXEventHandler(Window im_window, XEvent *event)
 		      XTextProperty tp;
 		      char *str = composition_string;
 		      XIMText text;
-		      XIMFeedback feedback[COMPOSITION_STRING_BUFFER] = {XIMUnderline};
+		      int len;
+
+		      len = MultiByteToWideChar (CP_UTF8, 0,
+						 (LPCSTR)composition_string,
+						 strlen(composition_string),
+						 NULL, 0);
 
 		      printf ("compstr: %s\n", composition_string);
 		      //setlocale (LC_CTYPE, "");
@@ -418,8 +514,8 @@ MyXEventHandler(Window im_window, XEvent *event)
 
 		      text.length = tp.nitems;
 		      text.string.multi_byte = tp.value;
-		      for (i = 0; i < text.length; i ++) feedback[i] = XIMUnderline;
-		      feedback[text.length] = 0;
+		      //for (i = 0; i < text.length; i ++) feedback[i] = XIMUnderline;
+		      feedback[len] = 0;
 		      text.feedback = feedback;
 
 		      rec->call_data.major_code = XIM_PREEDIT_DRAW;
@@ -429,7 +525,7 @@ MyXEventHandler(Window im_window, XEvent *event)
 		      rec->call_data.preedit_callback.todo.draw.chg_length = rec->length;
 		      rec->call_data.preedit_callback.todo.draw.text = &text;
 
-		      rec->length = tp.nitems;
+		      rec->length = len;
 
 		      printf("%d\n", rec->length);
 
@@ -442,22 +538,25 @@ MyXEventHandler(Window im_window, XEvent *event)
 	      case WinIMECMPResultStr:
 		{
 		  XIMFeedback feedback[1] = {0};
-
-		  if (!XWinIMEGetCompositionString (dpy, ime_event->context,
-						    WinIMECMPResultStr,
-						    COMPOSITION_STRING_BUFFER,
-						    composition_string))
+		  char result_string[STRING_BUFFER_SIZE];
+		  int len = XWinIMEGetCompositionString (dpy, ime_event->context,
+							 WinIMECMPResultStr,
+							 STRING_BUFFER_SIZE,
+							 result_string);
+		  if (len < 0)
 		    {
 		      printf("XWinIMEGetCompositionString failed.\n");
+		      break;
 		    }
+		  result_string[len] = '\0';
 
-		  if (strlen(composition_string) > 0)
+		  if (strlen(result_string) > 0)
 		    {
 		      XTextProperty tp;
-		      char *str = composition_string;
+		      char *str = result_string;
 		      XIMText text;
 
-		      printf ("commit result: %s\n", composition_string);
+		      printf ("commit result: %s\n", result_string);
 		      //setlocale (LC_CTYPE, "");
 		      Xutf8TextListToTextProperty(dpy, (char **)&str, 1,
 						  XCompoundTextStyle, &tp);
@@ -467,7 +566,6 @@ MyXEventHandler(Window im_window, XEvent *event)
 		      rec->call_data.commitstring.icid = rec->id;
 
 		      IMCommitString(g_ims, (XPointer)&rec->call_data);
-		      composition_string[0] = '\0';
 
 		      text.length = 0;
 		      text.string.multi_byte = "";
@@ -505,11 +603,11 @@ MyXEventHandler(Window im_window, XEvent *event)
 
 	    rec->call_data.major_code = XIM_PREEDIT_START;
 	    IMCallCallback(g_ims, (XPointer)&rec->call_data);
-	}
-	break;
-      case WinIMEEndComposition:
-	{
-	  printf("WinIMEEndComposition %d\n", ime_event->context);
+	  }
+	  break;
+	case WinIMEEndComposition:
+	  {
+	    printf("WinIMEEndComposition %d\n", ime_event->context);
 
 	    if (!rec)
 	      {
@@ -517,14 +615,38 @@ MyXEventHandler(Window im_window, XEvent *event)
 		break;
 	      }
 
+
+	    if (rec->length > 0)
+	      {
+		XTextProperty tp;
+		XIMText text;
+		XIMFeedback feedback[1] = {0};
+
+		text.length = 0;
+		text.string.multi_byte = "";
+		text.feedback = feedback;
+
+		/* Clear preedit. */
+		rec->call_data.major_code = XIM_PREEDIT_DRAW;
+		rec->call_data.preedit_callback.icid = rec->id;
+		rec->call_data.preedit_callback.todo.draw.caret = 0;
+		rec->call_data.preedit_callback.todo.draw.chg_first = 0;
+		rec->call_data.preedit_callback.todo.draw.chg_length = rec->length;
+		rec->call_data.preedit_callback.todo.draw.text = &text;
+
+		rec->length = 0;
+
+		IMCallCallback(g_ims, (XPointer)&rec->call_data);
+	      }
+
 	    rec->call_data.major_code = XIM_PREEDIT_DONE;
 	    IMCallCallback (g_ims, (XPointer)&rec->call_data);
+	  }
+	  break;
+	default:
+	  break;
 	}
-	break;
-      default:
-	break;
       }
-    }
     break;
   }
   return;
@@ -543,161 +665,161 @@ int ErrorHandler (Display *dpy, XErrorEvent *ev)
 int
 main(int argc, char **argv)
 {
-    char *display_name = NULL;
-    char *imname = NULL;
-    XIMS ims;
-    XIMStyles *input_styles, *styles2;
-    XIMTriggerKeys *on_keys, *trigger2;
-    XIMEncodings *encodings, *encoding2;
-    Window im_window;
-    register int i;
-    char transport[80];		/* enough */
+  char *display_name = NULL;
+  char *imname = NULL;
+  XIMS ims;
+  XIMStyles *input_styles, *styles2;
+  XIMTriggerKeys *on_keys, *trigger2;
+  XIMEncodings *encodings, *encoding2;
+  Window im_window;
+  register int i;
+  char transport[80];		/* enough */
 
-    for (i = 1; i < argc; i++) {
-	if (!strcmp(argv[i], "-name")) {
-	    imname = argv[++i];
-	} else if (!strcmp(argv[i], "-display")) {
-	    display_name = argv[++i];
-	} else if (!strcmp(argv[i], "-tcp")) {
-	    use_tcp = True;
-	} else if (!strcmp(argv[i], "-local")) {
-	    use_local = True;
-	} else if (!strcmp(argv[i], "-kl")) {
-	    filter_mask = (KeyPressMask|KeyReleaseMask);
-	}
+  for (i = 1; i < argc; i++) {
+    if (!strcmp(argv[i], "-name")) {
+      imname = argv[++i];
+    } else if (!strcmp(argv[i], "-display")) {
+      display_name = argv[++i];
+    } else if (!strcmp(argv[i], "-tcp")) {
+      use_tcp = True;
+    } else if (!strcmp(argv[i], "-local")) {
+      use_local = True;
+    } else if (!strcmp(argv[i], "-kl")) {
+      filter_mask = (KeyPressMask|KeyReleaseMask);
     }
-    if (!imname) imname = DEFAULT_IMNAME;
+  }
+  if (!imname) imname = DEFAULT_IMNAME;
 
-    setlocale(LC_CTYPE, "");
+  setlocale(LC_CTYPE, "");
 
-    if ((dpy = XOpenDisplay(display_name)) == NULL) {
-	fprintf(stderr, "Can't Open Display: %s\n", display_name);
-	exit(1);
-    }
+  if ((dpy = XOpenDisplay(display_name)) == NULL) {
+    fprintf(stderr, "Can't Open Display: %s\n", display_name);
+    exit(1);
+  }
 
-    //XSetErrorHandler(ErrorHandler);
+  //XSetErrorHandler(ErrorHandler);
 
-    if(!XWinIMEQueryExtension (dpy, &ime_event_base, &ime_error_base)){
-	fprintf(stderr, "No IME Extension\n");
-	exit(1);
-    }
+  if(!XWinIMEQueryExtension (dpy, &ime_event_base, &ime_error_base)){
+    fprintf(stderr, "No IME Extension\n");
+    exit(1);
+  }
 
-    XWinIMESelectInput (dpy, WinIMENotifyMask);
+  XWinIMESelectInput (dpy, WinIMENotifyMask);
 
-    im_window = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy),
-				    0, 0, 1, 1, 1, 0, 0);
-    if (im_window == (Window)NULL) {
-	fprintf(stderr, "Can't Create Window\n");
-	exit(1);
-    }
-    XStoreName(dpy, im_window, "Windows IME Input Method Server");
+  im_window = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy),
+				  0, 0, 1, 1, 1, 0, 0);
+  if (im_window == (Window)NULL) {
+    fprintf(stderr, "Can't Create Window\n");
+    exit(1);
+  }
+  XStoreName(dpy, im_window, "Windows IME Input Method Server");
 
-    if ((input_styles = (XIMStyles *)malloc(sizeof(XIMStyles))) == NULL) {
-	fprintf(stderr, "Can't allocate\n");
-	exit(1);
-    }
-    input_styles->count_styles = sizeof(Styles)/sizeof(XIMStyle) - 1;
-    input_styles->supported_styles = Styles;
+  if ((input_styles = (XIMStyles *)malloc(sizeof(XIMStyles))) == NULL) {
+    fprintf(stderr, "Can't allocate\n");
+    exit(1);
+  }
+  input_styles->count_styles = sizeof(Styles)/sizeof(XIMStyle) - 1;
+  input_styles->supported_styles = Styles;
 
-    if ((encodings = (XIMEncodings *)malloc(sizeof(XIMEncodings))) == NULL) {
-	fprintf(stderr, "Can't allocate\n");
-	exit(1);
-    }
-    encodings->count_encodings = sizeof(jaEncodings)/sizeof(XIMEncoding) - 1;
-    encodings->supported_encodings = jaEncodings;
+  if ((encodings = (XIMEncodings *)malloc(sizeof(XIMEncodings))) == NULL) {
+    fprintf(stderr, "Can't allocate\n");
+    exit(1);
+  }
+  encodings->count_encodings = sizeof(jaEncodings)/sizeof(XIMEncoding) - 1;
+  encodings->supported_encodings = jaEncodings;
 
-    if (use_local) {
-	char hostname[64];
-	char *address = "/tmp/.ximsock";
+  if (use_local) {
+    char hostname[64];
+    char *address = "/tmp/.ximsock";
 
-	gethostname(hostname, 64);
-	sprintf(transport, "local/%s:%s", hostname, address);
-    } else if (use_tcp) {
-	char hostname[64];
-	int port_number = 9010;
+    gethostname(hostname, 64);
+    sprintf(transport, "local/%s:%s", hostname, address);
+  } else if (use_tcp) {
+    char hostname[64];
+    int port_number = 9010;
 
-	gethostname(hostname, 64);
-	sprintf(transport, "tcp/%s:%d", hostname, port_number);
-    } else {
-	strcpy(transport, "X/");
-    }
+    gethostname(hostname, 64);
+    sprintf(transport, "tcp/%s:%d", hostname, port_number);
+  } else {
+    strcpy(transport, "X/");
+  }
 
-    g_ims = ims = IMOpenIM(dpy,
-			   IMModifiers, "Xi18n",
-			   IMServerWindow, im_window,
-			   IMServerName, imname,
-			   IMLocale, DEFAULT_LOCALE,
-			   IMServerTransport, transport,
-			   IMInputStyles, input_styles,
-			   NULL);
-    if (ims == (XIMS)NULL) {
-	fprintf(stderr, "Can't Open Input Method Service:\n");
-	fprintf(stderr, "\tInput Method Name :%s\n", imname);
-	fprintf(stderr, "\tTranport Address:%s\n", transport);
-	exit(1);
-    }
-    IMSetIMValues(ims,
-		  IMEncodingList, encodings,
-		  IMProtocolHandler, MyProtoHandler,
-		  IMFilterEventMask, filter_mask,
-		  NULL);
-    IMGetIMValues(ims,
-		  IMInputStyles, &styles2,
-		  IMOnKeysList, &trigger2,
-		  IMOffKeysList, &trigger2,
-		  IMEncodingList, &encoding2,
-		  NULL);
-    {
-      int i;
-      for (i = 0; i < styles2->count_styles; i ++)
-	{
-	  switch (styles2->supported_styles[i] & (XIMPreeditCallbacks|XIMPreeditPosition|XIMPreeditArea|XIMPreeditNothing))
-	    {
-	    case XIMPreeditCallbacks:
-	      printf ("XIMPreeditCallbacks:");
-	      break;
-	    case XIMPreeditPosition:
-	      printf ("XIMPreeditPosition:");
-	      break;
-	    case XIMPreeditArea:
-	      printf ("XIMPreeditArea:");
-	      break;
-	    case XIMPreeditNothing:
-	      printf ("XIMPreeditNothing:");
-	      break;
-	    default:
-	      printf ("No preedit style:");
-	      break;
-	    }
-	  switch (styles2->supported_styles[i] & (XIMStatusCallbacks|XIMStatusArea|XIMStatusNothing|XIMStatusNone))
-	    {
-	    case XIMStatusCallbacks:
-	      printf ("XIMStatusCallbacks\n");
-	      break;
-	    case XIMStatusArea:
-	      printf ("XIMStatusArea\n");
-	      break;
-	    case XIMStatusNothing:
-	      printf ("XIMStatusNothing\n");
-	      break;
-	    case XIMStatusNone:
-	      printf ("XIMStatusNone\n");
-	      break;
-	    default:
-	      printf ("No status style\n");
-	      break;
-	    }
-	}
-    }
-    XSelectInput(dpy, im_window, StructureNotifyMask|ButtonPressMask);
-    XMapWindow(dpy, im_window);
-    XFlush(dpy);		/* necessary flush for tcp/ip connection */
+  g_ims = ims = IMOpenIM(dpy,
+			 IMModifiers, "Xi18n",
+			 IMServerWindow, im_window,
+			 IMServerName, imname,
+			 IMLocale, DEFAULT_LOCALE,
+			 IMServerTransport, transport,
+			 IMInputStyles, input_styles,
+			 NULL);
+  if (ims == (XIMS)NULL) {
+    fprintf(stderr, "Can't Open Input Method Service:\n");
+    fprintf(stderr, "\tInput Method Name :%s\n", imname);
+    fprintf(stderr, "\tTranport Address:%s\n", transport);
+    exit(1);
+  }
+  IMSetIMValues(ims,
+		IMEncodingList, encodings,
+		IMProtocolHandler, MyProtoHandler,
+		IMFilterEventMask, filter_mask,
+		NULL);
+  IMGetIMValues(ims,
+		IMInputStyles, &styles2,
+		IMOnKeysList, &trigger2,
+		IMOffKeysList, &trigger2,
+		IMEncodingList, &encoding2,
+		NULL);
+  {
+    int i;
+    for (i = 0; i < styles2->count_styles; i ++)
+      {
+	switch (styles2->supported_styles[i] & (XIMPreeditCallbacks|XIMPreeditPosition|XIMPreeditArea|XIMPreeditNothing))
+	  {
+	  case XIMPreeditCallbacks:
+	    printf ("XIMPreeditCallbacks:");
+	    break;
+	  case XIMPreeditPosition:
+	    printf ("XIMPreeditPosition:");
+	    break;
+	  case XIMPreeditArea:
+	    printf ("XIMPreeditArea:");
+	    break;
+	  case XIMPreeditNothing:
+	    printf ("XIMPreeditNothing:");
+	    break;
+	  default:
+	    printf ("No preedit style:");
+	    break;
+	  }
+	switch (styles2->supported_styles[i] & (XIMStatusCallbacks|XIMStatusArea|XIMStatusNothing|XIMStatusNone))
+	  {
+	  case XIMStatusCallbacks:
+	    printf ("XIMStatusCallbacks\n");
+	    break;
+	  case XIMStatusArea:
+	    printf ("XIMStatusArea\n");
+	    break;
+	  case XIMStatusNothing:
+	    printf ("XIMStatusNothing\n");
+	    break;
+	  case XIMStatusNone:
+	    printf ("XIMStatusNone\n");
+	    break;
+	  default:
+	    printf ("No status style\n");
+	    break;
+	  }
+      }
+  }
+  XSelectInput(dpy, im_window, StructureNotifyMask|ButtonPressMask);
+  XMapWindow(dpy, im_window);
+  XFlush(dpy);		/* necessary flush for tcp/ip connection */
 
-    for (;;) {
-	XEvent event;
-	XNextEvent(dpy, &event);
-	if (XFilterEvent(&event, None) == True)
-	  continue;
-	MyXEventHandler(im_window, &event);
-    }
+  for (;;) {
+    XEvent event;
+    XNextEvent(dpy, &event);
+    if (XFilterEvent(&event, None) == True)
+      continue;
+    MyXEventHandler(im_window, &event);
+  }
 }
