@@ -31,8 +31,6 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
-#include <stdlib.h>
-#include "Xtrans.h"
 #include "FrameMgr.h"
 #include "IMdkit.h"
 #include "Xi18n.h"
@@ -79,6 +77,7 @@ static unsigned char *ReadXIMMessage (XIMS ims,
     unsigned char *p = NULL;
     unsigned char *p1;
 
+//fprintf(stderr, "In the ReadXIMMessage\n");
     while (client != NULL) {
         x_client = (XClient *) client->trans_rec;
         if (x_client->accept_win == ev->window) {

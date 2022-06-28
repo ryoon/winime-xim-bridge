@@ -1,5 +1,5 @@
 /*
- *Copyright (C) 2004 Kensuke Matsuzaki. All Rights Reserved.
+ *Copyright (C) 2004-2005 Kensuke Matsuzaki. All Rights Reserved.
  *
  *Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -15,15 +15,15 @@
  *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *NONINFRINGEMENT. IN NO EVENT SHALL THE KENSUKE MATSUZAKI BE LIABLE FOR
+ *NONINFRINGEMENT. IN NO EVENT SHALL KENSUKE MATSUZAKI BE LIABLE FOR
  *ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
  *CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  *WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- *Except as contained in this notice, the name of the Kensuke Matsuzaki
+ *Except as contained in this notice, the name of Kensuke Matsuzaki
  *shall not be used in advertising or otherwise to promote the sale, use
  *or other dealings in this Software without prior written authorization
- *from the Kensuke Matsuzaki Project.
+ *from Kensuke Matsuzaki.
  *
  * Authors:	Kensuke Matsuzaki <zakki@peppermint.jp>
  */

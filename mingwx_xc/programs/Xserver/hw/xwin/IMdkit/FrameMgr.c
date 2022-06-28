@@ -919,8 +919,8 @@ static XimFrameType FrameInstGetNextType(FrameInst fi, XimFrameTypeInfo info)
             register int offset, iter_idx;
 
             info->counter.is_byte_len =
-                (((long) fi->template[fi->cur_no].data & 0xFF)) == FmCounterByte;
-            offset = ((long) fi->template[fi->cur_no].data) >> 8;
+                (((int) fi->template[fi->cur_no].data & 0xFF)) == FmCounterByte;
+            offset = ((int) fi->template[fi->cur_no].data) >> 8;
             iter_idx = fi->cur_no + offset;
             if (fi->template[iter_idx].type == ITER)
             {
@@ -968,8 +968,8 @@ static XimFrameType FrameInstGetNextType(FrameInst fi, XimFrameTypeInfo info)
             register int size;
             register int i;
 
-            unit = _UNIT ((long) fi->template[fi->cur_no].data);
-            number = _NUMBER ((long) fi->template[fi->cur_no].data);
+            unit = _UNIT ((int) fi->template[fi->cur_no].data);
+            number = _NUMBER ((int) fi->template[fi->cur_no].data);
 
             i = fi->cur_no;
             size = 0;
@@ -1070,8 +1070,8 @@ static XimFrameType FrameInstPeekNextType (FrameInst fi, XimFrameTypeInfo info)
 	    register int iter_idx;
 
             info->counter.is_byte_len =
-                (((long) fi->template[fi->cur_no].data) & 0xFF) == FmCounterByte;
-            offset = ((long)fi->template[fi->cur_no].data) >> 8;
+                (((int) fi->template[fi->cur_no].data) & 0xFF) == FmCounterByte;
+            offset = ((int)fi->template[fi->cur_no].data) >> 8;
             iter_idx = fi->cur_no + offset;
             if (fi->template[iter_idx].type == ITER)
             {
@@ -1117,8 +1117,8 @@ static XimFrameType FrameInstPeekNextType (FrameInst fi, XimFrameTypeInfo info)
             register int size;
             register int i;
 
-            unit = _UNIT ((long) fi->template[fi->cur_no].data);
-            number = _NUMBER ((long) fi->template[fi->cur_no].data);
+            unit = _UNIT ((int) fi->template[fi->cur_no].data);
+            number = _NUMBER ((int) fi->template[fi->cur_no].data);
 
             i = fi->cur_no;
             size = 0;
@@ -2399,8 +2399,8 @@ static int _FrameInstGetItemSize (FrameInst fi, int cur_no)
             register int size;
             register int i;
 
-            unit = _UNIT ((long) fi->template[cur_no].data);
-            number = _NUMBER ((long) fi->template[cur_no].data);
+            unit = _UNIT ((int) fi->template[cur_no].data);
+            number = _NUMBER ((int) fi->template[cur_no].data);
 
             i = cur_no;
             size = 0;

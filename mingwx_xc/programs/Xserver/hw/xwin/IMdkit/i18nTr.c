@@ -177,7 +177,7 @@ static unsigned char *ReadTrIMMessage (XIMS ims, int fd, int *connect_id)
     /*endif*/
     return (unsigned char *) p;
 
-    /* TODO: Get rid of this label, and the goto's  */
+    //TODO: Get rid of this label, and the goto's
 read_error:
     _XUnregisterInternalConnection (i18n_core->address.dpy, fd);
     _XimXTransDisconnect (tr_client->accept_conn);

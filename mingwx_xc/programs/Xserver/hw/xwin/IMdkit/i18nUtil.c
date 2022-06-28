@@ -49,23 +49,20 @@ _Xi18nNeedSwap (Xi18n i18n_core, CARD16 connect_id)
 Xi18nClient *_Xi18nNewClient(Xi18n i18n_core)
 {
     static CARD16 connect_id = 0;
-    int new_connect_id;
     Xi18nClient *client;
 
     if (i18n_core->address.free_clients)
     {
         client = i18n_core->address.free_clients;
         i18n_core->address.free_clients = client->next;
-	new_connect_id = client->connect_id;
     }
     else
     {
         client = (Xi18nClient *) malloc (sizeof (Xi18nClient));
-	new_connect_id = ++connect_id;
     }
     /*endif*/
     memset (client, 0, sizeof (Xi18nClient));
-    client->connect_id = new_connect_id;
+    client->connect_id = ++connect_id;
     client->pending = (XIMPending *) NULL;
     client->sync = False;
     client->byte_order = '?'; 	/* initial value */

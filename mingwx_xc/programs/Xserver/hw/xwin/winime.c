@@ -1,5 +1,5 @@
 /*
- *Copyright (C) 2004 Kensuke Matsuzaki. All Rights Reserved.
+ *Copyright (C) 2004-2005 Kensuke Matsuzaki. All Rights Reserved.
  *
  *Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -15,15 +15,15 @@
  *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *NONINFRINGEMENT. IN NO EVENT SHALL THE KENSUKE MATSUZAKI BE LIABLE FOR
+ *NONINFRINGEMENT. IN NO EVENT SHALL KENSUKE MATSUZAKI BE LIABLE FOR
  *ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
  *CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  *WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- *Except as contained in this notice, the name of the Kensuke Matsuzaki
+ *Except as contained in this notice, the name of Kensuke Matsuzaki
  *shall not be used in advertising or otherwise to promote the sale, use
  *or other dealings in this Software without prior written authorization
- *from the Kensuke Matsuzaki Project.
+ *from Kensuke Matsuzaki.
  *
  * Authors:	Kensuke Matsuzaki <zakki@peppermint.jp>
  */
@@ -835,7 +835,7 @@ ProcWinIMESetFocus (register ClientPtr client)
 	  ImmAssociateContext (s_hAssociatedWnd, (HIMC)0);
 	}
 
-      s_hAssociatedWnd = GetActiveWindow ();
+      s_hAssociatedWnd = GetActiveWindow ();//FIXME
 
       ImmAssociateContext (s_hAssociatedWnd, pWIC->hIMC);
     }
@@ -1024,4 +1024,175 @@ SProcWinIMEDispatch (register ClientPtr client)
     default:
       return BadRequest;
     }
+}
+
+LRESULT
+winIMEMessageHandler (HWND hwnd, UINT message,
+		      WPARAM wParam, LPARAM lParam)
+{
+  switch (message)
+    {
+    case WM_IME_NOTIFY:
+      ErrorF ("winIMEMessageHandler - WM_IME_NOTIFY\n");
+      {
+	if (wParam == IMN_SETOPENSTATUS)
+	  {
+	    HIMC hIMC = ImmGetContext(hwnd);
+	    BOOL fStatus = ImmGetOpenStatus(hIMC);
+
+	    winWinIMESendEvent (WinIMEControllerNotify,
+				WinIMENotifyMask,
+				WinIMEOpenStatus,
+				fStatus,
+				winHIMCtoContext(hIMC));
+	    ImmReleaseContext(hwnd, hIMC);
+	  }
+      }
+      break;
+
+    case WM_IME_STARTCOMPOSITION:
+      ErrorF ("winIMEMessageHandler - WM_IME_STARTCOMPOSITION\n");
+      {
+	HIMC hIMC = ImmGetContext(hwnd);
+#if 0
+	COMPOSITIONFORM cf;
+
+	if (pWinPriv->dwCompositionStyle)
+	  {
+	    cf.dwStyle = pWinPriv->dwCompositionStyle;
+	    cf.ptCurrentPos.x = pWinPriv->ptCompositionPos.x;
+	    cf.ptCurrentPos.y = pWinPriv->ptCompositionPos.y;
+	    cf.rcArea.left = pWinPriv->rcCompositionArea.left;
+	    cf.rcArea.top = pWinPriv->rcCompositionArea.top;
+	    cf.rcArea.right = pWinPriv->rcCompositionArea.right;
+	    cf.rcArea.bottom = pWinPriv->rcCompositionArea.bottom;
+	    ImmSetCompositionWindow(hIMC, &cf);
+	  }
+#endif
+	winWinIMESendEvent (WinIMEControllerNotify,
+			    WinIMENotifyMask,
+			    WinIMEStartComposition,
+			    0,
+			    winHIMCtoContext(hIMC));
+	ImmReleaseContext(hwnd, hIMC);
+	if (!winHIMCCompositionDraw(hIMC)) return 0;
+      }
+      break;
+
+    case WM_IME_COMPOSITION:
+      ErrorF ("winIMEMessageHandler - WM_IME_STARTCOMPOSITION\n");
+      {
+	HIMC hIMC = ImmGetContext(hwnd);
+
+	if (lParam & GCS_COMPSTR)
+	  {
+	    int			nUnicodeSize = 0;
+	    wchar_t		*pwszUnicodeStr = NULL;
+	    char		*pszUTF8 = NULL;
+	    int			nUTF8;
+
+	    /* Get result */
+	    nUnicodeSize = ImmGetCompositionStringW(hIMC, GCS_COMPSTR, NULL, 0);
+	    pwszUnicodeStr = (wchar_t*) malloc (nUnicodeSize);
+	    ImmGetCompositionStringW(hIMC, GCS_COMPSTR, pwszUnicodeStr, nUnicodeSize);
+
+	    /* Convert to UTF8 */
+	    pszUTF8 = WideToUTF8 (nUnicodeSize, pwszUnicodeStr, &nUTF8);
+	    free (pwszUnicodeStr);
+
+	    winCommitCompositionResult (winHIMCtoContext(hIMC), GCS_COMPSTR, pszUTF8, nUTF8);
+
+	    winWinIMESendEvent (WinIMEControllerNotify,
+				WinIMENotifyMask,
+				WinIMEComposition,
+				WinIMECMPCompStr,
+				winHIMCtoContext(hIMC));
+	  }
+
+	if (lParam & GCS_CURSORPOS)
+	  {
+	    int nCursor = ImmGetCompositionStringW(hIMC, GCS_CURSORPOS, NULL, 0);
+
+	    winCommitCompositionResult (winHIMCtoContext(hIMC), GCS_CURSORPOS, (int*)&nCursor, 0);
+
+	    winWinIMESendEvent (WinIMEControllerNotify,
+				WinIMENotifyMask,
+				WinIMEComposition,
+				WinIMECMPCursorPos,
+				winHIMCtoContext(hIMC));
+	  }
+
+	if (lParam & GCS_RESULTSTR)
+	  {
+	    int			nUnicodeSize = 0;
+	    wchar_t		*pwszUnicodeStr = NULL;
+	    char		*pszUTF8 = NULL;
+	    int			nUTF8;
+
+	    /* Get result */
+	    nUnicodeSize = ImmGetCompositionStringW(hIMC, GCS_RESULTSTR, NULL, 0);
+	    pwszUnicodeStr = (wchar_t*) malloc (nUnicodeSize);
+	    ImmGetCompositionStringW(hIMC, GCS_RESULTSTR, pwszUnicodeStr, nUnicodeSize);
+
+	    /* Convert to UTF8 */
+	    pszUTF8 = WideToUTF8 (nUnicodeSize, pwszUnicodeStr, &nUTF8);
+	    free (pwszUnicodeStr);
+
+	    winCommitCompositionResult (winHIMCtoContext(hIMC), GCS_RESULTSTR, pszUTF8, nUTF8);
+
+	    winWinIMESendEvent (WinIMEControllerNotify,
+				WinIMENotifyMask,
+				WinIMEComposition,
+				WinIMECMPResultStr,
+				winHIMCtoContext(hIMC));
+	  }
+
+
+	if (lParam & GCS_COMPATTR)
+	  {
+	    int			nLen = 0;
+	    char		*pAttr = NULL;
+
+	    /* Get result */
+	    nLen = ImmGetCompositionStringW(hIMC, GCS_COMPATTR, NULL, 0);
+	    pAttr = (char*) malloc (nLen);
+	    ImmGetCompositionStringW(hIMC, GCS_COMPATTR, pAttr, nLen);
+
+	    winCommitCompositionResult (winHIMCtoContext(hIMC), GCS_COMPATTR, pAttr, nLen);
+
+	    winWinIMESendEvent (WinIMEControllerNotify,
+				WinIMENotifyMask,
+				WinIMEComposition,
+				WinIMECMPCompAttr,
+				winHIMCtoContext(hIMC));
+	  }
+
+	ImmReleaseContext(hwnd, hIMC);
+	if (!winHIMCCompositionDraw(hIMC)) return 0;
+      }
+      break;
+
+    case WM_IME_ENDCOMPOSITION:
+      ErrorF ("winIMEMessageHandler - WM_IME_ENDCOMPOSITION\n");
+      {
+	HIMC hIMC = ImmGetContext(hwnd);
+	winWinIMESendEvent (WinIMEControllerNotify,
+			    WinIMENotifyMask,
+			    WinIMEEndComposition,
+			    0,
+			    winHIMCtoContext(hIMC));
+	ImmReleaseContext(hwnd, hIMC);
+	if (!winHIMCCompositionDraw(hIMC)) return 0;
+      }
+      break;
+
+    case WM_IME_CHAR:
+      ErrorF ("winIMEMessageHandler - WM_IME_CHAR\n");
+      break;
+
+    case WM_CHAR:
+      ErrorF ("winIMEMessageHandler - WM_CHAR\n");
+      break;
+    }
+  return DefWindowProc (hwnd, message, wParam, lParam);
 }

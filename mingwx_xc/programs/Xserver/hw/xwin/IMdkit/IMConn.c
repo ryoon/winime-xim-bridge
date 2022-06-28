@@ -31,7 +31,6 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <X11/Xlib.h>
 #include <malloc.h>
-#include <string.h>
 #include "IMdkit.h"
 #include <stdarg.h>
 

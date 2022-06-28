@@ -32,8 +32,8 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifndef _Xi18n_h
 #define _Xi18n_h
 #include <X11/Xlib.h>
-/*#include <X11/Xfuncs.h>*/
-/*#include <X11/Xos.h>*/
+#include <X11/Xfuncs.h>
+#include <X11/Xos.h>
 #include "XimProto.h"
 
 /*
@@ -318,7 +318,7 @@ typedef struct
     int		minor_code;
     CARD16	connect_id;
     CARD16	icid;
-    CARD32	filter_event_mask;
+    CARD32	flag;
     CARD32	intercept_event_mask;
     CARD32	select_event_mask;
     CARD32	forward_event_mask;
@@ -400,14 +400,6 @@ typedef struct
     XIMStringConversionCallbackStruct strconv;
 } IMStrConvCBStruct;
 
-typedef struct
-{
-    int		major_code;
-    int		minor_code;
-    CARD16	connect_id;
-    CARD16	icid;
-} IMSyncXlibStruct;
-
 typedef union _IMProtocol
 {
     int	major_code;
@@ -435,7 +427,6 @@ typedef union _IMProtocol
     IMPreeditCBStruct preedit_callback;
     IMStatusCBStruct status_callback;
     IMStrConvCBStruct strconv_callback;
-    IMSyncXlibStruct sync_xlib;
     long pad[32];
 } IMProtocol;
 

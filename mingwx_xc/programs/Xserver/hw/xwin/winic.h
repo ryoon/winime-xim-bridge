@@ -27,59 +27,58 @@ Author:
     Kensuke Matsuzaki   (zakki@peppermint.jp)
 ******************************************************************/
 
-typedef struct {
-    XRectangle	area;		/* area */
-    XRectangle	area_needed;	/* area needed */
-    XPoint	spot_location;	/* spot location */
-    Colormap	cmap;		/* colormap */
-    CARD32	foreground;	/* foreground */
-    CARD32	background;	/* background */
-    Pixmap	bg_pixmap;	/* background pixmap */
-    char	*base_font;	/* base font of fontset */
-    CARD32	line_space;	/* line spacing */
-    Cursor	cursor;		/* cursor */
+typedef struct
+{
+  XRectangle area;		/* area */
+  XRectangle area_needed;	/* area needed */
+  XPoint spot_location;		/* spot location */
+  Colormap cmap;		/* colormap */
+  CARD32 foreground;		/* foreground */
+  CARD32 background;		/* background */
+  Pixmap bg_pixmap;		/* background pixmap */
+  char *base_font;		/* base font of fontset */
+  CARD32 line_space;		/* line spacing */
+  Cursor cursor;		/* cursor */
 } PreeditAttributes;
 
-typedef struct {
-    XRectangle	area;		/* area */
-    XRectangle	area_needed;	/* area needed */
-    Colormap	cmap;		/* colormap */
-    CARD32	foreground;	/* foreground */
-    CARD32	background;	/* background */
-    Pixmap	bg_pixmap;	/* background pixmap */
-    char	*base_font;	/* base font of fontset */
-    CARD32	line_space;	/* line spacing */
-    Cursor	cursor;		/* cursor */
+typedef struct
+{
+  XRectangle area;		/* area */
+  XRectangle area_needed;	/* area needed */
+  Colormap cmap;		/* colormap */
+  CARD32 foreground;		/* foreground */
+  CARD32 background;		/* background */
+  Pixmap bg_pixmap;		/* background pixmap */
+  char *base_font;		/* base font of fontset */
+  CARD32 line_space;		/* line spacing */
+  Cursor cursor;		/* cursor */
 } StatusAttributes;
 
-typedef struct _IMIC {
-  CARD16	id;		/* ic id */
-  INT32	input_style;	/* input style */
-  Window	client_win;	/* client window */
-  Window	focus_win;	/* focus window */
-  char	*resource_name;	/* resource name */
-  char	*resource_class;/* resource class */
-  int		context;	/* */
+typedef struct _IMIC
+{
+  CARD16 id;			/* ic id */
+  INT32 input_style;		/* input style */
+  Display *dpy;			/* display */
+  Window client_win;		/* client window */
+  Window focus_win;		/* focus window */
+  char *resource_name;		/* resource name */
+  char *resource_class;		/* resource class */
+  int context;			/* */
   PreeditAttributes pre_attr;	/* preedit attributes */
   StatusAttributes sts_attr;	/* status attributes */
-  int		length;
-  int		caret;
-  IMProtocol call_data;
-  struct _IMIC	*next;
+  int length;
+  int caret;
+  int toggled;
+  IMProtocol pCallData;
+  struct _IMIC *next;
 } IMIC;
 
-IMIC*
-FindIMIC(CARD16 icid);
+IMIC *FindIMIC (CARD16 icid);
 
-IMIC*
-FindIMICbyContext(int context);
+IMIC *FindIMICbyContext (int context);
 
-void
-CreateIMIC(IMChangeICStruct *call_data);
+void CreateIMIC (Display *pDisplay, IMChangeICStruct * pCallData);
 
-void
-SetIMIC(IMChangeICStruct *call_data);
+void SetIMIC (IMChangeICStruct * pCallData);
 
-void
-GetIMIC(IMChangeICStruct *call_data);
-
+void GetIMIC (IMChangeICStruct * pCallData);

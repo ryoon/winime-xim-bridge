@@ -1,11 +1,5 @@
 #include <Server.tmpl>
 
-#if HasShm
-SHMDEF = -DHAS_SHM
-#endif
-
-MMAPDEF = -DHAS_MMAP
-
 SRCS =	FrameMgr.c \
 	IMValues.c \
 	i18nIMProto.c \
@@ -35,16 +29,8 @@ OBJS =	FrameMgr.o \
 	i18nUtil.o
 
 INCLUDES = -I.
-#-I$(XBUILDINCDIR) -I$(FONTINCSRC) \
-#	   -I$(SERVERSRC)/fb -I$(SERVERSRC)/mi \
-#	   -I$(SERVERSRC)/miext/shadow -I$(SERVERSRC)/miext/layer \
-#	   -I$(SERVERSRC)/include -I$(SERVERSRC)/os  \
-#           -I$(EXTINCSRC) -I$(XINCLUDESRC) \
-#	   -I$(SERVERSRC)/render -I$(SERVERSRC)/randr
 
 DEFINES =
-# $(OS_DEFINES) $(SHMDEF) $(MMAPDEF) -UXFree86LOADER -UXF86DRI \
-#          -DPROJECTROOT="\"$(PROJECTROOT)\""
 
 NormalLibraryObjectRule()
 NormalLibraryTarget(Ximd,$(OBJS))

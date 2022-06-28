@@ -102,7 +102,6 @@ typedef struct
     int		(*callCallback) (XIMS, XPointer);
     int		(*preeditStart) (XIMS, XPointer);
     int		(*preeditEnd) (XIMS, XPointer);
-    int		(*syncXlib) (XIMS, XPointer);
 } IMMethodsRec, *IMMethods;
 
 typedef struct
@@ -115,7 +114,6 @@ typedef struct _XIMS
 {
     IMMethods	methods;
     IMCoreRec	core;
-    Bool	sync;
     void	*protocol;
 } XIMProtocolRec;
 
@@ -131,6 +129,5 @@ void IMCommitString (XIMS, XPointer);
 int IMCallCallback (XIMS, XPointer);
 int IMPreeditStart (XIMS, XPointer);
 int IMPreeditEnd (XIMS, XPointer);
-int IMSyncXlib (XIMS, XPointer);
 
 #endif /* IMdkit_h */
