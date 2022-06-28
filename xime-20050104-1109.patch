@@ -6,7 +6,7 @@ RCS file: /cvs/xorg/xc/config/cf/X11.tmpl,v
 retrieving revision 1.38
 diff -u -r1.38 X11.tmpl
 --- config/cf/X11.tmpl	3 Dec 2004 03:33:25 -0000	1.38
-+++ config/cf/X11.tmpl	3 Jan 2005 17:24:46 -0000
++++ config/cf/X11.tmpl	4 Jan 2005 02:07:11 -0000
 @@ -708,6 +708,10 @@
  #define BuildWindowsWMLibrary	NO
  #endif
@@ -72,7 +72,7 @@ RCS file: /cvs/xorg/xc/config/cf/cygwin.cf,v
 retrieving revision 1.17
 diff -u -r1.17 cygwin.cf
 --- config/cf/cygwin.cf	15 Nov 2004 15:06:52 -0000	1.17
-+++ config/cf/cygwin.cf	3 Jan 2005 17:24:46 -0000
++++ config/cf/cygwin.cf	4 Jan 2005 02:07:11 -0000
 @@ -314,6 +314,10 @@
  # define BuildWindowsWMLibrary	NO
  #endif /* BuildXWinMultiWindowExtWM && BuildWindowsWMLibrary */
@@ -110,7 +110,7 @@ RCS file: /cvs/xorg/xc/config/cf/cygwin.rules,v
 retrieving revision 1.9
 diff -u -r1.9 cygwin.rules
 --- config/cf/cygwin.rules	2 Sep 2004 01:10:28 -0000	1.9
-+++ config/cf/cygwin.rules	3 Jan 2005 17:24:46 -0000
++++ config/cf/cygwin.rules	4 Jan 2005 02:07:11 -0000
 @@ -31,6 +31,7 @@
  #define SharedLibDpsTk		YES
  #define SharedLibGlu		YES
@@ -125,7 +125,7 @@ RCS file: /cvs/xorg/xc/config/cf/mingw.cf,v
 retrieving revision 1.3
 diff -u -r1.3 mingw.cf
 --- config/cf/mingw.cf	2 Dec 2004 13:38:30 -0000	1.3
-+++ config/cf/mingw.cf	3 Jan 2005 17:24:46 -0000
++++ config/cf/mingw.cf	4 Jan 2005 02:07:12 -0000
 @@ -301,6 +301,10 @@
  # define BuildWindowsWMLibrary	NO
  #endif /* BuildXWinMultiWindowExtWM && BuildWindowsWMLibrary */
@@ -143,7 +143,7 @@ RCS file: /cvs/xorg/xc/lib/Imakefile,v
 retrieving revision 1.11
 diff -u -r1.11 Imakefile
 --- lib/Imakefile	29 Sep 2004 12:40:28 -0000	1.11
-+++ lib/Imakefile	3 Jan 2005 17:24:53 -0000
++++ lib/Imakefile	4 Jan 2005 02:07:27 -0000
 @@ -161,6 +161,10 @@
  WINDOWSLIBDIR = windows
  #endif
@@ -171,7 +171,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/Imakefile,v
 retrieving revision 1.25
 diff -u -r1.25 Imakefile
 --- programs/Xserver/Imakefile	6 Dec 2004 12:51:42 -0000	1.25
-+++ programs/Xserver/Imakefile	3 Jan 2005 17:24:56 -0000
++++ programs/Xserver/Imakefile	4 Jan 2005 02:07:38 -0000
 @@ -1019,13 +1019,18 @@
  #else
  XWINOPENGLLIB = 
@@ -198,7 +198,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/Imakefile,v
 retrieving revision 1.7
 diff -u -r1.7 Imakefile
 --- programs/Xserver/hw/xwin/Imakefile	3 Dec 2004 12:04:15 -0000	1.7
-+++ programs/Xserver/hw/xwin/Imakefile	3 Jan 2005 17:24:59 -0000
++++ programs/Xserver/hw/xwin/Imakefile	4 Jan 2005 02:07:49 -0000
 @@ -56,6 +56,11 @@
  	winwindowswm.c
  #endif
@@ -254,7 +254,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/win.h,v
 retrieving revision 1.12
 diff -u -r1.12 win.h
 --- programs/Xserver/hw/xwin/win.h	8 Dec 2004 15:48:15 -0000	1.12
-+++ programs/Xserver/hw/xwin/win.h	3 Jan 2005 17:25:00 -0000
++++ programs/Xserver/hw/xwin/win.h	4 Jan 2005 02:07:49 -0000
 @@ -1310,6 +1310,9 @@
  winWindowProc (HWND hWnd, UINT message, 
  	       WPARAM wParam, LPARAM lParam);
@@ -296,7 +296,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winblock.c,v
 retrieving revision 1.4
 diff -u -r1.4 winblock.c
 --- programs/Xserver/hw/xwin/winblock.c	15 Nov 2004 15:06:47 -0000	1.4
-+++ programs/Xserver/hw/xwin/winblock.c	3 Jan 2005 17:25:00 -0000
++++ programs/Xserver/hw/xwin/winblock.c	4 Jan 2005 02:07:50 -0000
 @@ -39,6 +39,7 @@
  extern HWND			g_hDlgDepthChange;
  extern HWND			g_hDlgExit;
@@ -320,7 +320,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winconfig.c,v
 retrieving revision 1.8
 diff -u -r1.8 winconfig.c
 --- programs/Xserver/hw/xwin/winconfig.c	8 Dec 2004 15:48:15 -0000	1.8
-+++ programs/Xserver/hw/xwin/winconfig.c	3 Jan 2005 17:25:00 -0000
++++ programs/Xserver/hw/xwin/winconfig.c	4 Jan 2005 02:07:50 -0000
 @@ -39,6 +39,16 @@
  #include "XKBsrv.h"
  #endif
@@ -357,7 +357,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winglobals.c,v
 retrieving revision 1.5
 diff -u -r1.5 winglobals.c
 --- programs/Xserver/hw/xwin/winglobals.c	22 Nov 2004 14:12:33 -0000	1.5
-+++ programs/Xserver/hw/xwin/winglobals.c	3 Jan 2005 17:25:01 -0000
++++ programs/Xserver/hw/xwin/winglobals.c	4 Jan 2005 02:07:50 -0000
 @@ -114,6 +114,15 @@
  #endif
  
@@ -380,7 +380,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winmultiwindowwindow.c,v
 retrieving revision 1.8
 diff -u -r1.8 winmultiwindowwindow.c
 --- programs/Xserver/hw/xwin/winmultiwindowwindow.c	5 Dec 2004 21:20:55 -0000	1.8
-+++ programs/Xserver/hw/xwin/winmultiwindowwindow.c	3 Jan 2005 17:25:01 -0000
++++ programs/Xserver/hw/xwin/winmultiwindowwindow.c	4 Jan 2005 02:07:51 -0000
 @@ -41,6 +41,9 @@
   */
  
@@ -415,7 +415,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winmultiwindowwndproc.c,v
 retrieving revision 1.4
 diff -u -r1.4 winmultiwindowwndproc.c
 --- programs/Xserver/hw/xwin/winmultiwindowwndproc.c	15 Sep 2004 17:58:50 -0000	1.4
-+++ programs/Xserver/hw/xwin/winmultiwindowwndproc.c	3 Jan 2005 17:25:01 -0000
++++ programs/Xserver/hw/xwin/winmultiwindowwndproc.c	4 Jan 2005 02:07:51 -0000
 @@ -38,6 +38,12 @@
  #if CYGDEBUG
  #include "winmessages.h"
@@ -429,19 +429,55 @@ diff -u -r1.4 winmultiwindowwndproc.c
  
  /*
   * External global variables
-@@ -380,6 +386,11 @@
+@@ -289,6 +295,7 @@
+   int		        iX, iY, iWidth, iHeight, iBorder;
+   winWMMessageRec	wmMsg;
+   Bool                  fWMMsgInitialized = FALSE;
++  HWND			hWndIME;
+   static Bool		s_fTracking = FALSE;
+ 
+ #if CYGDEBUG
+@@ -380,6 +387,11 @@
  	       WIN_WID_PROP,
  	       (HANDLE)winGetWindowID (((LPCREATESTRUCT) lParam)->lpCreateParams));
  
 +#ifdef XWIN_WINIME
 +      /* Disable IME by default */
-+      //ImmAssociateContext (hwnd, (HIMC) NULL);
++      ImmAssociateContext (hwnd, (HIMC) NULL);
 +#endif
 +
        /*
         * Make X windows' Z orders sync with Windows windows because
         * there can be AlwaysOnTop windows overlapped on the window
-@@ -1051,6 +1062,121 @@
+@@ -680,6 +692,13 @@
+       ErrorF ("winTopLevelWindowProc - WM_*KEYDOWN\n");
+ #endif
+ 
++#ifdef XWIN_WINIME
++      /*
++       * Ignore IME process key
++       */
++      if (wParam == VK_PROCESSKEY) return 0;
++#endif
++
+       /*
+        * Don't pass Alt-F4 key combo to root window,
+        * let Windows translate to WM_CLOSE and close this top-level window.
+@@ -744,6 +763,13 @@
+       ErrorF ("winTopLevelWindowProc - WM_*KEYUP\n");
+ #endif
+ 
++#ifdef XWIN_WINIME
++      /*
++       * Ignore IME process key
++       */
++      if (wParam == VK_PROCESSKEY) return 0;
++#endif
++
+       /* Pass the message to the root window */
+       SendMessage (hwndScreen, message, wParam, lParam);
+       return 0;
+@@ -1051,6 +1077,121 @@
  	}
        break;
  
@@ -566,10 +602,10 @@ diff -u -r1.4 winmultiwindowwndproc.c
 Index: programs/Xserver/hw/xwin/winprocarg.c
 ===================================================================
 RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winprocarg.c,v
-retrieving revision 1.9
-diff -u -r1.9 winprocarg.c
---- programs/Xserver/hw/xwin/winprocarg.c	8 Dec 2004 15:48:15 -0000	1.9
-+++ programs/Xserver/hw/xwin/winprocarg.c	3 Jan 2005 17:25:02 -0000
+retrieving revision 1.10
+diff -u -r1.10 winprocarg.c
+--- programs/Xserver/hw/xwin/winprocarg.c	15 Dec 2004 12:22:39 -0000	1.10
++++ programs/Xserver/hw/xwin/winprocarg.c	4 Jan 2005 02:07:51 -0000
 @@ -54,6 +54,9 @@
  extern Bool			g_fNoHelpMessageBox;                     
  extern Bool			g_fSoftwareCursor;
@@ -580,7 +616,7 @@ diff -u -r1.9 winprocarg.c
  
  /* globals required by callback function for monitor information */
  struct GetMonitorInfoData {
-@@ -1220,6 +1223,18 @@
+@@ -1259,6 +1262,18 @@
        return 1;
      }
  
@@ -605,7 +641,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winscrinit.c,v
 retrieving revision 1.8
 diff -u -r1.8 winscrinit.c
 --- programs/Xserver/hw/xwin/winscrinit.c	15 Nov 2004 15:06:48 -0000	1.8
-+++ programs/Xserver/hw/xwin/winscrinit.c	3 Jan 2005 17:25:02 -0000
++++ programs/Xserver/hw/xwin/winscrinit.c	4 Jan 2005 02:07:52 -0000
 @@ -75,6 +75,9 @@
  extern miPointerScreenFuncRec	g_winPointerCursorFuncs;
  extern int			g_iScreenPrivateIndex;
@@ -636,7 +672,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winwakeup.c,v
 retrieving revision 1.4
 diff -u -r1.4 winwakeup.c
 --- programs/Xserver/hw/xwin/winwakeup.c	15 Nov 2004 15:06:48 -0000	1.4
-+++ programs/Xserver/hw/xwin/winwakeup.c	3 Jan 2005 17:25:02 -0000
++++ programs/Xserver/hw/xwin/winwakeup.c	4 Jan 2005 02:07:52 -0000
 @@ -63,7 +63,7 @@
  	  && (g_hDlgAbout == 0
  	      || !IsDialogMessage (g_hDlgAbout, &msg)))
@@ -652,7 +688,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winwindowswm.c,v
 retrieving revision 1.2
 diff -u -r1.2 winwindowswm.c
 --- programs/Xserver/hw/xwin/winwindowswm.c	21 Jun 2004 13:19:32 -0000	1.2
-+++ programs/Xserver/hw/xwin/winwindowswm.c	3 Jan 2005 17:25:02 -0000
++++ programs/Xserver/hw/xwin/winwindowswm.c	4 Jan 2005 02:07:52 -0000
 @@ -240,7 +240,7 @@
         */
        if (!pHead)
@@ -668,7 +704,7 @@ RCS file: /cvs/xorg/xc/programs/Xserver/hw/xwin/winwndproc.c,v
 retrieving revision 1.8
 diff -u -r1.8 winwndproc.c
 --- programs/Xserver/hw/xwin/winwndproc.c	15 Nov 2004 15:06:48 -0000	1.8
-+++ programs/Xserver/hw/xwin/winwndproc.c	3 Jan 2005 17:25:03 -0000
++++ programs/Xserver/hw/xwin/winwndproc.c	4 Jan 2005 02:07:53 -0000
 @@ -58,6 +58,7 @@
  extern HWND			g_hwndKeyboardFocus;
  extern Bool			g_fSoftwareCursor;

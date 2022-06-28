@@ -24,6 +24,7 @@ PERFORMANCE OF THIS SOFTWARE.
 Author:
     Hidetoshi Tajima	Hewlett-Packard Company.
 			(tajima@kobe.hp.com)
+    Kensuke Matsuzaki   (zakki@peppermint.jp)
 ******************************************************************/
 
 typedef struct {
@@ -61,11 +62,15 @@ typedef struct _IC {
     int		context;	/* */
     PreeditAttributes pre_attr;	/* preedit attributes */
     StatusAttributes sts_attr;	/* status attributes */
+    IMProtocol call_data;
     struct _IC	*next;
 } IC;
 
 IC*
 FindIC(CARD16 icid);
+
+IC*
+FindICbyContext(int context);
 
 void
 CreateIC(IMChangeICStruct *call_data);

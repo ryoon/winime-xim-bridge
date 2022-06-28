@@ -24,11 +24,13 @@ PERFORMANCE OF THIS SOFTWARE.
 Author:
     Hidetoshi Tajima	Hewlett-Packard Company.
 			(tajima@kobe.hp.com)
+    Kensuke Matsuzaki   (zakki@peppermint.jp)
 ******************************************************************/
 
 #include <X11/Xlib.h>
 #include <X11/Xos.h>
 #include <X11/extensions/winime.h>
+#include <stdio.h>
 #include "IMdkit/IMdkit.h"
 #include "IMdkit/Xi18n.h"
 #include "winIC.h"
@@ -52,11 +54,32 @@ static IC
     memset(rec, 0, sizeof(IC));
     rec->id = ++icid;
 
+    XWinIMECreateContext (dpy, &rec->context);
+    printf ("%d\n", rec->context);
+
     rec->next = ic_list;
     ic_list = rec;
     return rec;
 }
 
+static Window
+TopLevelWindow(Window win)
+{
+  Window w, root, parent, *children;
+  int nchildren;
+
+  printf ("%s\n", __FUNCTION__);
+  parent = win;
+
+  do {
+    w = parent;
+    if (!XQueryTree(dpy, w, &root, &parent, &children, &nchildren)) return None;
+
+    if (!children) XFree (children);
+  } while (root != parent);
+
+  return w;
+}
 static void
 StoreIC(rec, call_data)
 IC *rec;
@@ -68,25 +91,91 @@ IMChangeICStruct *call_data;
     register int i;
 
     for (i = 0; i < (int)call_data->ic_attr_num; i++, ic_attr++) {
-      printf ("StoreIC: %s", pre_attr->name);
+      printf ("StoreIC.ic: %s\n", pre_attr->name);
       if (!strcmp(XNInputStyle, ic_attr->name))
-	rec->input_style = *(INT32*)ic_attr->value;
+	{
+	  rec->input_style = *(INT32*)ic_attr->value;
+	  switch (rec->input_style & (XIMPreeditCallbacks|XIMPreeditPosition|XIMPreeditArea|XIMPreeditNothing))
+	    {
+	    case XIMPreeditCallbacks:
+	      printf ("XIMPreeditCallbacks:");
+	      break;
+	    case XIMPreeditPosition:
+	      printf ("XIMPreeditPosition:");
+	      break;
+	    case XIMPreeditArea:
+	      printf ("XIMPreeditArea:");
+	      break;
+	    case XIMPreeditNothing:
+	      printf ("XIMPreeditNothing:");
+	      XWinIMESetCompositionWindow (dpy, rec->context,
+					   WinIMECSDefault,
+					   0, 0, 0, 0);
+	      break;
+	    default:
+	      printf ("No preedit style:");
+	      break;
+	    }
+	  switch (rec->input_style & (XIMStatusCallbacks|XIMStatusArea|XIMStatusNothing|XIMStatusNone))
+	    {
+	    case XIMStatusCallbacks:
+	      printf ("XIMStatusCallbacks\n");
+	      break;
+	    case XIMStatusArea:
+	      printf ("XIMStatusArea\n");
+	      break;
+	    case XIMStatusNothing:
+	      printf ("XIMStatusNothing\n");
+	      break;
+	    case XIMStatusNone:
+	      printf ("XIMStatusNone\n");
+	      break;
+	    default:
+	      printf ("No status style\n");
+	      break;
+	    }
+	}
       else if (!strcmp(XNClientWindow, ic_attr->name))
 	rec->client_win = *(Window*)ic_attr->value;
       else if (!strcmp(XNFocusWindow, ic_attr->name))
 	rec->focus_win = *(Window*)ic_attr->value;
     }
     for (i = 0; i < (int)call_data->preedit_attr_num; i++, pre_attr++) {
-      printf ("StoreIC: %s", pre_attr->name);
+      printf ("StoreIC.preedit: %s\n", pre_attr->name);
 	if (!strcmp(XNArea, pre_attr->name))
 	  {
+	    int x, y, w, h;
+	    Window child;
+
 	    rec->pre_attr.area = *(XRectangle*)pre_attr->value;
 	    printf ("StoreIC: XArea(%d, %d, %d, %d)\n",
 		    rec->pre_attr.area.x, rec->pre_attr.area.y,
 		    rec->pre_attr.area.width, rec->pre_attr.area.height);
+	    x = rec->pre_attr.area.x;
+	    y = rec->pre_attr.area.y;
+	    w = rec->pre_attr.area.width;
+	    h = rec->pre_attr.area.height;
 
-	    XWinIMESetCompositionPoint (dpy, rec->context,
-					rec->pre_attr.area.x, rec->pre_attr.area.y);
+	    if (rec->focus_win)
+	      {
+		Window top = TopLevelWindow (rec->focus_win);
+		if (top != None)
+		  {
+		    XTranslateCoordinates (dpy, rec->focus_win,
+					   top, x, y, &x, &y, &child);
+		    XTranslateCoordinates (dpy, rec->focus_win,
+					   top, w, h, &w, &h, &child);
+		    printf ("(%d, %d) to (%d %d)\n", rec->pre_attr.area.x, rec->pre_attr.area.y, x, y);
+		  }
+		else
+		  {
+		    printf ("failed. use (%d, %d)\n", x, y);
+		  }
+	      }
+
+	    XWinIMESetCompositionWindow (dpy, rec->context,
+					 WinIMECSRect,
+					 x, y, w, h);
 	  }
 	else if (!strcmp(XNAreaNeeded, pre_attr->name))
 	  {
@@ -94,12 +183,35 @@ IMChangeICStruct *call_data;
 	  }
 	else if (!strcmp(XNSpotLocation, pre_attr->name))
 	  {
+	    int x, y;
+	    Window child;
+
 	    rec->pre_attr.spot_location = *(XPoint*)pre_attr->value;
 	    printf ("StoreIC: XNSpotLocation(%d,%d)\n",
 		    rec->pre_attr.spot_location.x, rec->pre_attr.spot_location.y);
 
-	    XWinIMESetCompositionPoint (dpy, rec->context,
-					rec->pre_attr.spot_location.x, rec->pre_attr.spot_location.y);
+	    x = rec->pre_attr.spot_location.x;
+	    y = rec->pre_attr.spot_location.y;
+
+	    if (rec->focus_win)
+	      {
+		Window top = TopLevelWindow (rec->focus_win);
+		if (top != None)
+		  {
+		    XTranslateCoordinates (dpy, rec->focus_win,
+					   top, x, y, &x, &y, &child);
+		    printf ("(%d, %d) to (%d %d)\n",
+			    rec->pre_attr.spot_location.x, rec->pre_attr.spot_location.y,
+			    x, y);
+		  }
+		else
+		  {
+		    printf ("failed. use (%d, %d)\n", x, y);
+		  }
+	      }
+	    XWinIMESetCompositionWindow (dpy, rec->context,
+					 WinIMECSPoint,
+					 x, y, 0, 0);
 	  }
 	else if (!strcmp(XNColormap, pre_attr->name))
 	  rec->pre_attr.cmap = *(Colormap*)pre_attr->value;
@@ -128,16 +240,18 @@ IMChangeICStruct *call_data;
 	  rec->pre_attr.cursor = *(Cursor*)pre_attr->value;
     }
     for (i = 0; i < (int)call_data->status_attr_num; i++, sts_attr++) {
-      printf ("StoreIC: %s", sts_attr->name);
+      printf ("StoreIC.status: %s", sts_attr->name);
       if (!strcmp(XNArea, sts_attr->name))
 	{
 	  rec->sts_attr.area = *(XRectangle*)sts_attr->value;
+#if 0
 	  printf ("StoreIC: XArea(%d, %d, %d, %d)\n",
 		  rec->sts_attr.area.x, rec->sts_attr.area.y,
 		  rec->sts_attr.area.width, rec->sts_attr.area.height);
 	  XWinIMESetCompositionRect (dpy, rec->context,
 				     rec->pre_attr.area.x, rec->sts_attr.area.y,
 				     rec->sts_attr.area.width, rec->sts_attr.area.height);
+#endif
 	}
       else if (!strcmp(XNAreaNeeded, sts_attr->name))
 	rec->sts_attr.area_needed = *(XRectangle*)sts_attr->value;
@@ -168,6 +282,9 @@ IMChangeICStruct *call_data;
 	rec->sts_attr.cursor = *(Cursor*)sts_attr->value;
     }
 
+    rec->call_data.major_code = call_data->major_code;
+    rec->call_data.any.minor_code = call_data->minor_code;
+    rec->call_data.any.connect_id = call_data->connect_id;
 }
 
 IC*
@@ -185,6 +302,20 @@ CARD16 icid;
     return NULL;
 }
 
+IC*
+FindICbyContext(int context)
+{
+    IC *rec = ic_list;
+
+    while (rec != NULL) {
+	if (rec->context == context)
+	  return rec;
+	rec = rec->next;
+    }
+
+    return NULL;
+}
+
 void
 CreateIC(call_data)
 IMChangeICStruct *call_data;
@@ -194,8 +325,12 @@ IMChangeICStruct *call_data;
     rec = NewIC();
     if (rec == NULL)
       return;
+
+    memset (&rec->call_data, 0, sizeof(IMProtocol));
+
     StoreIC(rec, call_data);
     call_data->icid = rec->id;
+
     return;
 }
 
